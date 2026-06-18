@@ -524,6 +524,7 @@ function render() {
       const pct = ((last.followers - base7.followers) / base7.followers * 100).toFixed(1);
       g7el.style.display = 'block';
       g7el.textContent   = '+' + pct + '% 7d';
+      g7el.title = `${base7.date}: ${base7.followers.toLocaleString('cs')} sledujících  →  dnes: ${last.followers.toLocaleString('cs')} sledujících`;
     } else {
       g7el.style.display = 'none';
     }
@@ -574,8 +575,7 @@ function render() {
     const totalAvg = Math.round(reels.reduce((s,r) => s + r.views, 0) / reels.length);
     document.getElementById('avgAllVal').textContent = fmt(totalAvg);
 
-    // Delta celkového průměru: posledních 7 dní vs. předchozích 7 dní
-    function showDelta(elId, newAvg, oldAvg) {
+    function showDelta(elId, newAvg, oldAvg, newLabel, oldLabel) {
       const el = document.getElementById(elId);
       if (newAvg && oldAvg && oldAvg > 0) {
         const pct = ((newAvg - oldAvg) / oldAvg * 100);
@@ -583,6 +583,7 @@ function render() {
         el.textContent = (pct > 0 ? '+' : '') + pct.toFixed(1) + '%';
         el.style.background = pct > 0 ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)';
         el.style.color = pct > 0 ? 'var(--green)' : 'var(--red)';
+        el.title = `${newLabel || 'nové'}: ø ${fmt(newAvg)} views  →  ${oldLabel || 'předchozí'}: ø ${fmt(oldAvg)} views`;
       } else {
         el.style.display = 'none';
       }
@@ -591,12 +592,12 @@ function render() {
     const avg7    = recent.length ? Math.round(recent.reduce((s,r) => s + r.views, 0) / recent.length) : null;
     const avgPrev = prev7.length  ? Math.round(prev7.reduce((s,r)  => s + r.views, 0) / prev7.length)  : null;
 
-    // Celkový avg delta: posledních 7 vs. předchozích 7
-    showDelta('avgAllDelta', avg7, avgPrev);
+    // Celkový avg delta: posledních 7 dní vs. celkový průměr všech reelů
+    showDelta('avgAllDelta', avg7, totalAvg, 'posl. 7 dní', 'celkový průměr');
 
     // 7-denní avg + delta vs. předchozích 7 dní
     document.getElementById('avg7Val').textContent = avg7 !== null ? fmt(avg7) : '—';
-    showDelta('avg7Delta', avg7, avgPrev);
+    showDelta('avg7Delta', avg7, avgPrev, 'posl. 7 dní', 'předch. 7 dní');
   }
 
   renderReels();
