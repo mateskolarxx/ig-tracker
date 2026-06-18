@@ -256,10 +256,16 @@
   <div class="card">
     <div class="card-icon" style="background:rgba(131,58,180,0.15)">📊</div>
     <div class="card-label">Průměrné views</div>
-    <div class="card-value" id="avgAllVal">—</div>
+    <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
+      <div class="card-value" id="avgAllVal">—</div>
+      <span id="avgAllDelta" style="display:none;font-size:12px;font-weight:700;padding:3px 9px;border-radius:20px"></span>
+    </div>
     <div style="font-size:11px;color:var(--muted);margin-top:4px">celkem za všechny reely</div>
     <div style="height:1px;background:var(--border);margin:12px 0"></div>
-    <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px" id="avg7Val">—</div>
+    <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px" id="avg7Val">—</div>
+      <span id="avg7Delta" style="display:none;font-size:12px;font-weight:700;padding:2px 8px;border-radius:20px"></span>
+    </div>
     <div style="font-size:11px;color:var(--muted);margin-top:4px">za posledních 7 dní</div>
   </div>
 </div>
@@ -559,13 +565,38 @@ function render() {
 
   // Avg views card
   if (reels.length) {
+    const cutoff7  = Date.now() - 7  * 86400000;
+    const cutoff14 = Date.now() - 14 * 86400000;
+    const recent   = reels.filter(r => r.posted_at && new Date(r.posted_at).getTime() >= cutoff7);
+    const prev7    = reels.filter(r => r.posted_at && new Date(r.posted_at).getTime() >= cutoff14 && new Date(r.posted_at).getTime() < cutoff7);
+
+    // Celkový průměr
     const totalAvg = Math.round(reels.reduce((s,r) => s + r.views, 0) / reels.length);
     document.getElementById('avgAllVal').textContent = fmt(totalAvg);
-    const cutoff7 = Date.now() - 7 * 86400000;
-    const recent = reels.filter(r => r.posted_at && new Date(r.posted_at).getTime() >= cutoff7);
-    document.getElementById('avg7Val').textContent = recent.length
-      ? fmt(Math.round(recent.reduce((s,r) => s + r.views, 0) / recent.length))
-      : '—';
+
+    // Delta celkového průměru: posledních 7 dní vs. předchozích 7 dní
+    function showDelta(elId, newAvg, oldAvg) {
+      const el = document.getElementById(elId);
+      if (newAvg && oldAvg && oldAvg > 0) {
+        const pct = ((newAvg - oldAvg) / oldAvg * 100);
+        el.style.display = 'inline-block';
+        el.textContent = (pct > 0 ? '+' : '') + pct.toFixed(1) + '%';
+        el.style.background = pct > 0 ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)';
+        el.style.color = pct > 0 ? 'var(--green)' : 'var(--red)';
+      } else {
+        el.style.display = 'none';
+      }
+    }
+
+    const avg7    = recent.length ? Math.round(recent.reduce((s,r) => s + r.views, 0) / recent.length) : null;
+    const avgPrev = prev7.length  ? Math.round(prev7.reduce((s,r)  => s + r.views, 0) / prev7.length)  : null;
+
+    // Celkový avg delta: posledních 7 vs. předchozích 7
+    showDelta('avgAllDelta', avg7, avgPrev);
+
+    // 7-denní avg + delta vs. předchozích 7 dní
+    document.getElementById('avg7Val').textContent = avg7 !== null ? fmt(avg7) : '—';
+    showDelta('avg7Delta', avg7, avgPrev);
   }
 
   renderReels();
