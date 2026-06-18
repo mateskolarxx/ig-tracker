@@ -142,8 +142,11 @@
 
   /* LOG TABLE */
   .log-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 24px; }
-  .log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0; }
   .log-title { font-size: 14px; font-weight: 700; }
+  .log-toggle-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; transition: color 0.15s; }
+  .log-toggle-btn:hover { color: var(--text); }
+  .log-body { margin-top: 16px; }
   table { width: 100%; border-collapse: collapse; }
   th { text-align: left; padding: 8px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.7px; color: var(--muted); border-bottom: 1px solid var(--border); }
   td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.04); }
@@ -225,7 +228,7 @@
   <div class="logo">📸</div>
   <div>
     <h1 class="grad">stelinkax</h1>
-    <p>@stelinkax</p>
+    <p>@stelinkax · <span id="lastSyncLabel" style="color:var(--muted)">—</span></p>
   </div>
   <div class="header-right">
     <span id="streakBadge" class="streak-badge" style="display:none">🔥 <span id="streakCount">0</span> dní</span>
@@ -235,8 +238,9 @@
   </div>
 </div>
 
-<!-- 3 STAT CARDS -->
+<!-- STAT CARDS -->
 <div class="stats-grid">
+  <!-- Sledující -->
   <div class="card">
     <div class="card-icon icon-pink">👥</div>
     <div class="card-label">Sledující</div>
@@ -246,6 +250,8 @@
     </div>
     <div class="card-delta" id="followersDelta" style="margin-top:10px"><span class="delta-neu">Žádná data</span></div>
   </div>
+
+  <!-- Nejlepší reel -->
   <div class="card">
     <div class="card-icon icon-gold">🏆</div>
     <div class="card-label">Nejsledovanější reel</div>
@@ -253,9 +259,11 @@
     <div class="card-delta" id="topReelLikes" style="color:var(--muted);font-size:12px;margin-top:6px"></div>
     <a id="topReelLink" class="top-reel-link" href="#" target="_blank" style="display:none">↗ Otevřít reel</a>
   </div>
+
+  <!-- Průměrné views -->
   <div class="card">
     <div class="card-icon" style="background:rgba(131,58,180,0.15)">📊</div>
-    <div class="card-label">Průměrné views</div>
+    <div class="card-label">Průměrné views <span id="totalReelsCount" style="font-weight:400;text-transform:none;letter-spacing:0"></span></div>
     <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
       <div class="card-value" id="avgAllVal">—</div>
       <span id="avgAllDelta" style="display:none;font-size:12px;font-weight:700;padding:3px 9px;border-radius:20px"></span>
@@ -268,12 +276,35 @@
     </div>
     <div style="font-size:11px;color:var(--muted);margin-top:4px">za posledních 7 dní</div>
   </div>
+
+  <!-- Engagement rate -->
+  <div class="card">
+    <div class="card-icon" style="background:rgba(34,197,94,0.12)">⚡</div>
+    <div class="card-label">Views / sledující</div>
+    <div class="card-value" id="engagementVal">—</div>
+    <div style="font-size:11px;color:var(--muted);margin-top:4px" id="engagementSub">průměr posl. 7 dní ÷ sledující</div>
+  </div>
+
+  <!-- Nejhorší reel -->
+  <div class="card">
+    <div class="card-icon" style="background:rgba(239,68,68,0.12)">📉</div>
+    <div class="card-label">Nejhorší reel</div>
+    <div class="card-value" id="worstReelViews">—</div>
+    <div class="card-delta" id="worstReelDesc" style="color:var(--muted);font-size:12px;margin-top:6px"></div>
+    <a id="worstReelLink" class="top-reel-link" href="#" target="_blank" style="display:none;border-color:rgba(239,68,68,0.3);color:var(--red);background:rgba(239,68,68,0.08)">↗ Otevřít reel</a>
+  </div>
 </div>
 
 <!-- FOLLOWERS CHART -->
 <div class="chart-card">
   <div class="chart-title">📈 Růst sledujících</div>
   <div class="chart-wrap"><canvas id="followersChart"></canvas></div>
+</div>
+
+<!-- REELS VIEWS CHART -->
+<div class="chart-card">
+  <div class="chart-title">🎥 Views reelů (posledních 15)</div>
+  <div class="chart-wrap"><canvas id="reelsChart"></canvas></div>
 </div>
 
 <!-- REELS + PLÁN -->
@@ -295,13 +326,18 @@
   </div>
 </div>
 
-<!-- LOG TABLE -->
+<!-- LOG TABLE (collapsible) -->
 <div class="log-card">
   <div class="log-header">
     <div class="log-title">📋 Historie záznamů</div>
-    <button class="btn-ghost" onclick="exportCSV()" style="font-size:12px;padding:6px 12px;">⬇ Export CSV</button>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn-ghost" onclick="exportCSV()" style="font-size:12px;padding:6px 12px;">⬇ Export CSV</button>
+      <button class="log-toggle-btn" id="logToggleBtn" onclick="toggleLog()">▼ Zobrazit</button>
+    </div>
   </div>
-  <div id="logTableWrap"></div>
+  <div class="log-body" id="logBody" style="display:none">
+    <div id="logTableWrap"></div>
+  </div>
 </div>
 
 </div><!-- /appContent -->
@@ -376,9 +412,9 @@ const SB_KEY = 'sb_publishable_g4_Zrm9SJSFZICzBao-AmA_hfcMxftQ';
 const sb = window.supabase.createClient(SB_URL, SB_KEY);
 
 // ── STATE ──────────────────────────────────────────────────────────────
-let logs  = []; // [{id,date,followers,note,created_at}]
-let reels = []; // [{id,url,views,likes,description,posted_at,created_at}]
-let plan  = {}; // {date: note}
+let logs  = [];
+let reels = [];
+let plan  = {};
 
 // ── FORMAT ────────────────────────────────────────────────────────────
 function fmt(n) {
@@ -423,7 +459,6 @@ async function loadData() {
 
 // ── SEED ─────────────────────────────────────────────────────────────
 async function seedIfEmpty() {
-  // Seed logs
   if (!logs.length) {
     const { error } = await sb.from('logs').insert([
       { date: '2026-06-18', followers: 205, note: 'První záznam' }
@@ -431,7 +466,6 @@ async function seedIfEmpty() {
     if (!error) logs = [{ id: 'seed', date: '2026-06-18', followers: 205, note: 'První záznam' }];
   }
 
-  // Seed reels
   if (!reels.length) {
     const rawReels = [
       { url: 'https://www.instagram.com/stelinkax/reel/DZuLsYrOPcK/', views: 958,   likes: 8,   description: 'můžeš si vybrat jen 1 číslo', posted_at: '2026-06-18T09:07:47Z' },
@@ -458,7 +492,6 @@ async function seedIfEmpty() {
     if (!error && data) reels = data;
   }
 
-  // Seed plan (7 days)
   if (!Object.keys(plan).length) {
     const today = new Date();
     const planRows = [];
@@ -478,6 +511,14 @@ async function doRefresh() {
   location.reload();
 }
 
+// ── LOG TOGGLE ────────────────────────────────────────────────────────
+let logOpen = false;
+function toggleLog() {
+  logOpen = !logOpen;
+  document.getElementById('logBody').style.display = logOpen ? 'block' : 'none';
+  document.getElementById('logToggleBtn').textContent = logOpen ? '▲ Skrýt' : '▼ Zobrazit';
+}
+
 // ── STREAK ────────────────────────────────────────────────────────────
 function calcStreak() {
   if (!logs.length) return 0;
@@ -492,11 +533,19 @@ function calcStreak() {
 
 // ── RENDER ────────────────────────────────────────────────────────────
 let followersChart;
+let reelsViewsChart;
 
 function render() {
   const sorted = [...logs].sort((a,b) => a.date.localeCompare(b.date));
   const last   = sorted[sorted.length - 1];
   const prev   = sorted[sorted.length - 2];
+
+  // Last sync label
+  if (last) {
+    const d = new Date(last.date);
+    const label = d.toLocaleDateString('cs', { day: 'numeric', month: 'numeric', year: 'numeric' });
+    document.getElementById('lastSyncLabel').textContent = 'Naposledy sync: ' + label;
+  }
 
   // Followers card
   if (last) {
@@ -529,13 +578,25 @@ function render() {
     link.href = top.url;
   }
 
+  // Worst reel card
+  if (reels.length) {
+    const worst = [...reels].sort((a,b) => a.views - b.views)[0];
+    document.getElementById('worstReelViews').textContent = fmt(worst.views);
+    document.getElementById('worstReelDesc').textContent = worst.description
+      ? `${worst.description} · ❤️ ${fmt(worst.likes||0)}`
+      : `❤️ ${fmt(worst.likes||0)} likes`;
+    const wlink = document.getElementById('worstReelLink');
+    wlink.style.display = 'inline-flex';
+    wlink.href = worst.url;
+  }
+
   // Streak
   const streak = calcStreak();
   const badge  = document.getElementById('streakBadge');
   if (streak >= 2) { badge.style.display = 'inline-flex'; document.getElementById('streakCount').textContent = streak; }
   else badge.style.display = 'none';
 
-  // Chart
+  // Followers chart
   const labels   = sorted.map(l => l.date.slice(5));
   const follData = sorted.map(l => l.followers);
   if (followersChart) followersChart.destroy();
@@ -553,14 +614,64 @@ function render() {
     }
   });
 
+  // Reels views bar chart
+  if (reels.length) {
+    const last15 = [...reels]
+      .filter(r => r.posted_at)
+      .sort((a,b) => new Date(a.posted_at) - new Date(b.posted_at))
+      .slice(-15);
+
+    const rLabels = last15.map(r => {
+      const d = new Date(r.posted_at);
+      return String(d.getDate()).padStart(2,'0') + '.' + String(d.getMonth()+1).padStart(2,'0') + '.';
+    });
+    const rData = last15.map(r => r.views);
+    const rColors = last15.map(r => r.views === Math.max(...reels.map(x => x.views)) ? '#fcb045' : 'rgba(193,53,132,0.7)');
+
+    if (reelsViewsChart) reelsViewsChart.destroy();
+    reelsViewsChart = new Chart(document.getElementById('reelsChart'), {
+      type: 'bar',
+      data: {
+        labels: rLabels,
+        datasets: [{
+          data: rData,
+          backgroundColor: rColors,
+          borderRadius: 6,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => ' ' + fmt(ctx.raw) + ' views',
+              title: (items) => {
+                const r = last15[items[0].dataIndex];
+                return r.description ? r.description : items[0].label;
+              }
+            }
+          }
+        },
+        scales: {
+          x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#7070a0', font: { size: 11 } } },
+          y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#7070a0', font: { size: 11 }, callback: v => fmt(v) } }
+        }
+      }
+    });
+  }
+
   // Avg views card
   if (reels.length) {
+    // Total reels count
+    document.getElementById('totalReelsCount').textContent = `· ${reels.length} reelů`;
+
     const cutoff7  = Date.now() - 7  * 86400000;
     const cutoff14 = Date.now() - 14 * 86400000;
     const recent   = reels.filter(r => r.posted_at && new Date(r.posted_at).getTime() >= cutoff7);
     const prev7    = reels.filter(r => r.posted_at && new Date(r.posted_at).getTime() >= cutoff14 && new Date(r.posted_at).getTime() < cutoff7);
 
-    // Celkový průměr
     const totalAvg = Math.round(reels.reduce((s,r) => s + r.views, 0) / reels.length);
     document.getElementById('avgAllVal').textContent = fmt(totalAvg);
 
@@ -581,12 +692,19 @@ function render() {
     const avg7    = recent.length ? Math.round(recent.reduce((s,r) => s + r.views, 0) / recent.length) : null;
     const avgPrev = prev7.length  ? Math.round(prev7.reduce((s,r)  => s + r.views, 0) / prev7.length)  : null;
 
-    // Celkový avg delta: posledních 7 dní vs. celkový průměr všech reelů
     showDelta('avgAllDelta', avg7, totalAvg, 'posl. 7 dní', 'celkový průměr');
-
-    // 7-denní avg + delta vs. předchozích 7 dní
     document.getElementById('avg7Val').textContent = avg7 !== null ? fmt(avg7) : '—';
     showDelta('avg7Delta', avg7, avgPrev, 'posl. 7 dní', 'předch. 7 dní');
+
+    // Engagement rate (views per follower)
+    if (avg7 && last && last.followers > 0) {
+      const rate = (avg7 / last.followers * 100).toFixed(1) + '%';
+      document.getElementById('engagementVal').textContent = rate;
+      document.getElementById('engagementSub').textContent =
+        `${fmt(avg7)} views ÷ ${fmt(last.followers)} sledujících`;
+    } else {
+      document.getElementById('engagementVal').textContent = '—';
+    }
   }
 
   renderReels();
@@ -597,7 +715,6 @@ function render() {
 // ── REELS LIST ────────────────────────────────────────────────────────
 function renderReels() {
   const wrap = document.getElementById('reelsList');
-  // Sort by posted_at desc, take last 5
   const last5 = [...reels]
     .sort((a,b) => new Date(b.posted_at||0) - new Date(a.posted_at||0))
     .slice(0, 5);
