@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IG Tracker – stelinkax</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  :root {
+    --bg: #0a0a0f; --bg2: #12121a; --bg3: #1a1a26;
+    --border: #2a2a3d; --accent: #c13584; --accent2: #833ab4;
+    --accent3: #fd1d1d; --gold: #fcb045; --text: #f0f0f5;
+    --muted: #7070a0; --green: #22c55e; --red: #ef4444;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-height: 100vh; padding: 24px;
+  }
+
+  /* HEADER */
+  .header { display: flex; align-items: center; gap: 16px; margin-bottom: 32px; }
+  .logo {
+    width: 44px; height: 44px;
+    background: linear-gradient(135deg, var(--gold), var(--accent3), var(--accent), var(--accent2));
+    border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px;
+  }
+  .header h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+  .header p { color: var(--muted); font-size: 13px; margin-top: 2px; }
+  .header-right { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+  .btn {
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    border: none; color: #fff; padding: 8px 18px;
+    border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 600; transition: opacity 0.15s;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-ghost {
+    background: var(--bg3); border: 1px solid var(--border);
+    color: var(--muted); padding: 8px 16px;
+    border-radius: 10px; cursor: pointer; font-size: 13px; transition: all 0.15s;
+  }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--text); }
+  .btn-sm {
+    background: var(--bg3); border: 1px solid var(--border);
+    color: var(--muted); padding: 5px 12px;
+    border-radius: 8px; cursor: pointer; font-size: 12px; transition: all 0.15s;
+  }
+  .btn-sm:hover { border-color: var(--accent); color: var(--text); }
+
+  /* STAT CARDS */
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px; margin-bottom: 24px;
+  }
+  .card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 16px; padding: 20px;
+  }
+  .card-label {
+    font-size: 12px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.8px; color: var(--muted); margin-bottom: 8px;
+  }
+  .card-value { font-size: 36px; font-weight: 800; letter-spacing: -1.5px; }
+  .card-delta { font-size: 13px; margin-top: 6px; }
+  .delta-pos { color: var(--green); }
+  .delta-neg { color: var(--red); }
+  .delta-neu { color: var(--muted); }
+  .card-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; margin-bottom: 12px;
+  }
+  .icon-pink { background: rgba(193,53,132,0.15); }
+  .icon-gold  { background: rgba(252,176,69,0.15); }
+  .top-reel-link {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 10px;
+    color: var(--accent); font-size: 12px; font-weight: 600;
+    text-decoration: none; background: rgba(193,53,132,0.1);
+    border: 1px solid rgba(193,53,132,0.3); padding: 5px 12px;
+    border-radius: 8px; transition: all 0.15s;
+  }
+  .top-reel-link:hover { background: rgba(193,53,132,0.2); }
+
+  /* CHART */
+  .chart-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 16px; padding: 20px; margin-bottom: 24px;
+  }
+  .chart-title { font-size: 14px; font-weight: 700; margin-bottom: 16px; }
+  .chart-wrap { position: relative; height: 220px; }
+
+  /* BOTTOM GRID */
+  .bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  @media (max-width: 900px) { .bottom-grid { grid-template-columns: 1fr; } }
+  .section-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 16px; padding: 20px;
+  }
+  .section-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;
+  }
+  .section-title { font-size: 14px; font-weight: 700; }
+
+  /* REELS LIST */
+  .reel-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .reel-item:last-child { border-bottom: none; }
+  .reel-num {
+    width: 22px; height: 22px; border-radius: 6px; background: var(--bg3);
+    color: var(--muted); font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .reel-info { flex: 1; min-width: 0; }
+  .reel-views { font-size: 15px; font-weight: 700; }
+  .reel-label { font-size: 11px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .reel-link { color: var(--accent); text-decoration: none; font-size: 18px; flex-shrink: 0; opacity: 0.8; transition: opacity 0.15s; }
+  .reel-link:hover { opacity: 1; }
+
+  /* PLÁN */
+  .plan-days { display: flex; flex-direction: column; gap: 8px; }
+  .plan-day {
+    display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px;
+    border-radius: 10px; background: var(--bg3); border: 1px solid var(--border);
+    cursor: pointer; transition: border-color 0.15s;
+  }
+  .plan-day:hover { border-color: rgba(193,53,132,0.4); }
+  .plan-day.has-note { border-color: rgba(193,53,132,0.25); }
+  .plan-day.today { background: rgba(193,53,132,0.08); border-color: rgba(193,53,132,0.4); }
+  .plan-date-label { flex-shrink: 0; min-width: 72px; }
+  .plan-date-today { font-size: 10px; color: var(--accent); font-weight: 700; letter-spacing: 0.5px; }
+  .plan-date-day { font-size: 13px; font-weight: 700; }
+  .plan-date-dow { font-size: 11px; color: var(--muted); }
+  .plan-note-text { font-size: 12px; color: var(--text); flex: 1; line-height: 1.5; }
+  .plan-note-empty { font-size: 12px; color: var(--muted); flex: 1; font-style: italic; }
+  .plan-edit-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; flex-shrink: 0; transition: color 0.15s; }
+  .plan-edit-btn:hover { color: var(--accent); }
+
+  /* LOG TABLE */
+  .log-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 24px; }
+  .log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .log-title { font-size: 14px; font-weight: 700; }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; padding: 8px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.7px; color: var(--muted); border-bottom: 1px solid var(--border); }
+  td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  .tag-pos { color: var(--green); font-weight: 600; }
+  .tag-neg { color: var(--red); font-weight: 600; }
+  .tag-neu { color: var(--muted); }
+
+  /* MODALS */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75); backdrop-filter: blur(4px);
+    z-index: 100; align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 20px; padding: 28px; width: 100%; max-width: 420px; position: relative;
+  }
+  .modal h2 { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 6px; }
+  .form-group input, .form-group textarea {
+    width: 100%; background: var(--bg3); border: 1px solid var(--border);
+    color: var(--text); padding: 10px 14px; border-radius: 10px; font-size: 15px;
+    outline: none; transition: border-color 0.15s; font-family: inherit;
+  }
+  .form-group textarea { resize: vertical; min-height: 90px; }
+  .form-group input:focus, .form-group textarea:focus { border-color: var(--accent); }
+  .form-group input::placeholder, .form-group textarea::placeholder { color: var(--muted); }
+  .modal-footer { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
+  .modal-close { position: absolute; top: 16px; right: 16px; background: none; border: none; color: var(--muted); cursor: pointer; font-size: 20px; }
+  .modal-close:hover { color: var(--text); }
+  input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.5); }
+
+  .empty { text-align: center; padding: 30px; color: var(--muted); }
+  .grad { background: linear-gradient(90deg, var(--accent), var(--gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .streak-badge { background: linear-gradient(135deg, var(--gold), var(--accent3)); color: #000; font-weight: 700; font-size: 12px; padding: 4px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px; }
+
+  /* LOADING */
+  .loading-overlay {
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 200; gap: 16px;
+  }
+  .spinner {
+    width: 40px; height: 40px; border: 3px solid var(--border);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { color: var(--muted); font-size: 14px; }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--bg3); border: 1px solid var(--border);
+    color: var(--text); padding: 12px 20px; border-radius: 12px;
+    font-size: 13px; font-weight: 500; z-index: 300;
+    opacity: 0; transform: translateY(8px);
+    transition: all 0.25s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.err { border-color: var(--red); color: var(--red); }
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text">Načítám data…</div>
+</div>
+
+<div id="appContent" style="display:none">
+
+<div class="header">
+  <div class="logo">📸</div>
+  <div>
+    <h1 class="grad">stelinkax</h1>
+    <p>@stelinkax</p>
+  </div>
+  <div class="header-right">
+    <span id="streakBadge" class="streak-badge" style="display:none">🔥 <span id="streakCount">0</span> dní</span>
+    <button class="btn-ghost" id="refreshBtn" onclick="doRefresh()" title="Obnovit data ze serveru" style="font-size:16px;padding:8px 12px;">↻</button>
+    <button class="btn-ghost" onclick="openSettings()">⚙️ Nastavení</button>
+    <button class="btn" onclick="openLogModal()">+ Přidat záznam</button>
+  </div>
+</div>
+
+<!-- 3 STAT CARDS -->
+<div class="stats-grid">
+  <div class="card">
+    <div class="card-icon icon-pink">👥</div>
+    <div class="card-label">Sledující</div>
+    <div style="position:relative;display:inline-block">
+      <div class="card-value" id="followersVal">—</div>
+      <div id="growth7pct" style="display:none;position:absolute;top:-6px;right:-48px;background:rgba(34,197,94,0.15);color:#22c55e;font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;white-space:nowrap"></div>
+    </div>
+    <div class="card-delta" id="followersDelta" style="margin-top:10px"><span class="delta-neu">Žádná data</span></div>
+  </div>
+  <div class="card">
+    <div class="card-icon icon-gold">🏆</div>
+    <div class="card-label">Nejsledovanější reel</div>
+    <div class="card-value" id="topReelViews">—</div>
+    <div class="card-delta" id="topReelLikes" style="color:var(--muted);font-size:12px;margin-top:6px"></div>
+    <a id="topReelLink" class="top-reel-link" href="#" target="_blank" style="display:none">↗ Otevřít reel</a>
+  </div>
+  <div class="card">
+    <div class="card-icon" style="background:rgba(131,58,180,0.15)">📊</div>
+    <div class="card-label">Průměrné views</div>
+    <div class="card-value" id="avgAllVal">—</div>
+    <div style="font-size:11px;color:var(--muted);margin-top:4px">celkem za všechny reely</div>
+    <div style="height:1px;background:var(--border);margin:12px 0"></div>
+    <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px" id="avg7Val">—</div>
+    <div style="font-size:11px;color:var(--muted);margin-top:4px">za posledních 7 dní</div>
+  </div>
+</div>
+
+<!-- FOLLOWERS CHART -->
+<div class="chart-card">
+  <div class="chart-title">📈 Růst sledujících</div>
+  <div class="chart-wrap"><canvas id="followersChart"></canvas></div>
+</div>
+
+<!-- REELS + PLÁN -->
+<div class="bottom-grid">
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-title">🎥 Posledních 5 reelů</div>
+      <button class="btn-sm" onclick="openReelModal()">+ Přidat</button>
+    </div>
+    <div id="reelsList"></div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-title">📅 Plán</div>
+      <span style="font-size:11px;color:var(--muted)">klikni pro úpravu</span>
+    </div>
+    <div class="plan-days" id="planDays"></div>
+  </div>
+</div>
+
+<!-- LOG TABLE -->
+<div class="log-card">
+  <div class="log-header">
+    <div class="log-title">📋 Historie záznamů</div>
+    <button class="btn-ghost" onclick="exportCSV()" style="font-size:12px;padding:6px 12px;">⬇ Export CSV</button>
+  </div>
+  <div id="logTableWrap"></div>
+</div>
+
+</div><!-- /appContent -->
+
+<!-- LOG MODAL -->
+<div class="modal-overlay" id="logModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeLogModal()">✕</button>
+    <h2>+ Přidat záznam</h2>
+    <div class="form-group"><label>Datum</label><input type="date" id="logDate"></div>
+    <div class="form-group"><label>Sledující</label><input type="number" id="logFollowers" placeholder="např. 1240"></div>
+    <div class="form-group"><label>Poznámka (volitelné)</label><input type="text" id="logNote" placeholder="např. viral reel, collab..."></div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeLogModal()">Zrušit</button>
+      <button class="btn" id="saveLogBtn" onclick="saveLog()">Uložit</button>
+    </div>
+  </div>
+</div>
+
+<!-- REEL MODAL -->
+<div class="modal-overlay" id="reelModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeReelModal()">✕</button>
+    <h2>🎥 Přidat reel</h2>
+    <div class="form-group"><label>URL reelu</label><input type="text" id="reelUrl" placeholder="https://www.instagram.com/reel/..."></div>
+    <div class="form-group"><label>Views</label><input type="number" id="reelViews" placeholder="např. 47100"></div>
+    <div class="form-group"><label>Likes</label><input type="number" id="reelLikes" placeholder="např. 452"></div>
+    <div class="form-group"><label>Datum vydání (volitelné)</label><input type="date" id="reelPostedAt"></div>
+    <div class="form-group"><label>Popis (volitelné)</label><input type="text" id="reelDesc" placeholder="např. challenge, sprcha reel..."></div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeReelModal()">Zrušit</button>
+      <button class="btn" id="saveReelBtn" onclick="saveReel()">Uložit</button>
+    </div>
+  </div>
+</div>
+
+<!-- PLAN MODAL -->
+<div class="modal-overlay" id="planModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closePlanModal()">✕</button>
+    <h2 id="planModalTitle">📅 Plán</h2>
+    <div class="form-group"><label>Co plánuješ?</label>
+      <textarea id="planNote" placeholder="např. natočit reel, odpovědět na DMs..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="clearPlanNote()">Smazat</button>
+      <button class="btn-ghost" onclick="closePlanModal()">Zrušit</button>
+      <button class="btn" id="savePlanBtn" onclick="savePlanNote()">Uložit</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeSettings()">✕</button>
+    <h2>⚙️ Nastavení</h2>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:16px">Supabase projekt: tolfunyrkqvjoscepkzw</p>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeSettings()">Zavřít</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── SUPABASE ──────────────────────────────────────────────────────────
+const SB_URL = 'https://tolfunyrkqvjoscepkzw.supabase.co';
+const SB_KEY = 'sb_publishable_g4_Zrm9SJSFZICzBao-AmA_hfcMxftQ';
+const sb = window.supabase.createClient(SB_URL, SB_KEY);
+
+// ── STATE ──────────────────────────────────────────────────────────────
+let logs  = []; // [{id,date,followers,note,created_at}]
+let reels = []; // [{id,url,views,likes,description,posted_at,created_at}]
+let plan  = {}; // {date: note}
+
+// ── FORMAT ────────────────────────────────────────────────────────────
+function fmt(n) {
+  if (!n && n !== 0) return '—';
+  if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
+  if (n >= 1000)    return (n/1000).toFixed(1) + 'K';
+  return n.toLocaleString('cs');
+}
+function deltaHtml(val) {
+  if (val === null || val === undefined) return '<span class="delta-neu">—</span>';
+  const sign = val > 0 ? '+' : '';
+  const cls  = val > 0 ? 'delta-pos' : val < 0 ? 'delta-neg' : 'delta-neu';
+  const arr  = val > 0 ? '▲' : val < 0 ? '▼' : '●';
+  return `<span class="${cls}">${arr} ${sign}${fmt(val)} vs. předchozí den</span>`;
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────
+function toast(msg, err = false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (err ? ' err' : '');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.className = 'toast'; }, 3000);
+}
+
+// ── LOAD DATA ─────────────────────────────────────────────────────────
+async function loadData() {
+  const [logsRes, reelsRes, planRes] = await Promise.all([
+    sb.from('logs').select('*').order('date', {ascending: true}),
+    sb.from('reels').select('*').order('posted_at', {ascending: false}),
+    sb.from('plan').select('*').order('date', {ascending: true}),
+  ]);
+  if (logsRes.error)  throw logsRes.error;
+  if (reelsRes.error) throw reelsRes.error;
+  if (planRes.error)  throw planRes.error;
+
+  logs  = logsRes.data  || [];
+  reels = reelsRes.data || [];
+  plan  = {};
+  (planRes.data || []).forEach(p => { plan[p.date] = p.note; });
+}
+
+// ── SEED ─────────────────────────────────────────────────────────────
+async function seedIfEmpty() {
+  // Seed logs
+  if (!logs.length) {
+    const { error } = await sb.from('logs').insert([
+      { date: '2026-06-18', followers: 205, note: 'První záznam' }
+    ]);
+    if (!error) logs = [{ id: 'seed', date: '2026-06-18', followers: 205, note: 'První záznam' }];
+  }
+
+  // Seed reels
+  if (!reels.length) {
+    const rawReels = [
+      { url: 'https://www.instagram.com/stelinkax/reel/DZuLsYrOPcK/', views: 958,   likes: 8,   description: 'můžeš si vybrat jen 1 číslo', posted_at: '2026-06-18T09:07:47Z' },
+      { url: 'https://www.instagram.com/stelinkax/reel/DZsk6Dyueaj/', views: 1187,  likes: 12,  description: '',                             posted_at: '2026-06-17T18:09:38Z' },
+      { url: 'https://www.instagram.com/stelinkax/reel/DZrnI5fu2Ws/', views: 30200, likes: 923, description: '',                             posted_at: '2026-06-17T09:12:05Z' },
+      { url: 'https://www.instagram.com/stelinkax/reel/DZp37ibsIL6/', views: 47100, likes: 452, description: 'ne',                          posted_at: '2026-06-16T16:58:35Z' },
+      { url: 'https://www.instagram.com/stelinkax/reel/DZo6HPwODQz/', views: 25800, likes: 158, description: 'cocktail reel',               posted_at: '2026-06-16T07:58:06Z' },
+      { url: 'https://www.instagram.com/stelinkax/reel/DZnWvLrOe_a/', views: 1749,  likes: 12,  description: 'Captain America',             posted_at: '2026-06-15T17:30:56Z' },
+      { url: 'https://www.instagram.com/stelinkax/reel/DZk6zfKOX4w/', views: 3457,  likes: 30,  description: '',                             posted_at: '2026-06-14T18:46:20Z' },
+      { url: 'https://www.instagram.com/stelinkax/reel/DZiSFzEOQJ5/', views: 1476,  likes: 21,  description: '',                             posted_at: '2026-06-13T18:12:46Z' },
+      { url: 'https://www.instagram.com/stelinkax/reel/DZfqVuQuSml/', views: 6480,  likes: 68,  description: '',                             posted_at: '2026-06-12T17:48:35Z' },
+      { url: 'https://www.instagram.com/stelinkax/reel/DZdUIKGuBNp/', views: 2727,  likes: 20,  description: 'jak ti říkám ahoj',           posted_at: '2026-06-11T19:54:32Z' },
+      { url: 'https://www.instagram.com/stelinkax/reel/DZah-fquATi/', views: 4792,  likes: 42,  description: 'gym',                         posted_at: '2026-06-10T17:57:29Z' },
+      { url: 'https://www.instagram.com/stelinkax/reel/DZX-Hx4OSw6/', views: 1522,  likes: 15,  description: '',                             posted_at: '2026-06-09T00:00:00Z' },
+      { url: 'https://www.instagram.com/stelinkax/reel/DZVSMFIucpL/', views: 179000,likes: 920, description: '🏆 Viral',                    posted_at: '2026-06-08T00:00:00Z' },
+      { url: 'https://www.instagram.com/stelinkax/reel/DZS2lJ-uQKq/', views: 4427,  likes: 60,  description: '',                             posted_at: '2026-06-07T00:00:00Z' },
+      { url: 'https://www.instagram.com/stelinkax/reel/DZQNVGyONrz/', views: 2790,  likes: 6,   description: '',                             posted_at: '2026-06-06T00:00:00Z' },
+      { url: 'https://www.instagram.com/stelinkax/reel/DZNrJJsuEhB/', views: 5630,  likes: 24,  description: '',                             posted_at: '2026-06-05T00:00:00Z' },
+      { url: 'https://www.instagram.com/stelinkax/reel/DZK9ZOwswq8/', views: 7201,  likes: 74,  description: '',                             posted_at: '2026-06-04T00:00:00Z' },
+      { url: 'https://www.instagram.com/stelinkax/reel/DZIVDias6AW/', views: 53300, likes: 179, description: '',                             posted_at: '2026-06-03T00:00:00Z' },
+      { url: 'https://www.instagram.com/stelinkax/reel/DZFaHeWMbHd/', views: 20100, likes: 220, description: '',                             posted_at: '2026-06-02T00:00:00Z' },
+    ];
+    const { data, error } = await sb.from('reels').insert(rawReels).select();
+    if (!error && data) reels = data;
+  }
+
+  // Seed plan (7 days)
+  if (!Object.keys(plan).length) {
+    const today = new Date();
+    const planRows = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      const key = d.toISOString().split('T')[0];
+      planRows.push({ date: key, note: '📹 10:00 – vydání videa\n📹 19:00 – vydání videa' });
+      plan[key] = '📹 10:00 – vydání videa\n📹 19:00 – vydání videa';
+    }
+    await sb.from('plan').insert(planRows);
+  }
+}
+
+// ── REFRESH ──────────────────────────────────────────────────────────
+async function doRefresh() {
+  const btn = document.getElementById('refreshBtn');
+  btn.textContent = '↻';
+  btn.style.animation = 'spin 0.8s linear infinite';
+  try {
+    await loadData();
+    render();
+    toast('Data aktualizována ✓');
+  } catch(e) {
+    toast('Chyba při načítání: ' + e.message, true);
+  } finally {
+    btn.style.animation = '';
+  }
+}
+
+// ── STREAK ────────────────────────────────────────────────────────────
+function calcStreak() {
+  if (!logs.length) return 0;
+  const s = [...logs].sort((a,b) => b.date.localeCompare(a.date));
+  let n = 1;
+  for (let i = 1; i < s.length; i++) {
+    const diff = (new Date(s[i-1].date) - new Date(s[i].date)) / 86400000;
+    if (diff === 1) n++; else break;
+  }
+  return n;
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────
+let followersChart;
+
+function render() {
+  const sorted = [...logs].sort((a,b) => a.date.localeCompare(b.date));
+  const last   = sorted[sorted.length - 1];
+  const prev   = sorted[sorted.length - 2];
+
+  // Followers card
+  if (last) {
+    document.getElementById('followersVal').textContent = fmt(last.followers);
+    document.getElementById('followersDelta').innerHTML =
+      prev ? deltaHtml(last.followers - prev.followers)
+           : '<span class="delta-neu">První záznam</span>';
+
+    const g7el  = document.getElementById('growth7pct');
+    const cutoff = new Date(last.date);
+    cutoff.setDate(cutoff.getDate() - 7);
+    const base7 = [...sorted].reverse().find(l => new Date(l.date) <= cutoff);
+    if (base7 && base7.followers > 0 && last.followers > base7.followers) {
+      const pct = ((last.followers - base7.followers) / base7.followers * 100).toFixed(1);
+      g7el.style.display = 'block';
+      g7el.textContent   = '+' + pct + '% 7d';
+    } else {
+      g7el.style.display = 'none';
+    }
+  }
+
+  // Top reel card
+  if (reels.length) {
+    const top = [...reels].sort((a,b) => b.views - a.views)[0];
+    document.getElementById('topReelViews').textContent = fmt(top.views);
+    document.getElementById('topReelLikes').textContent = top.likes ? `❤️ ${fmt(top.likes)} likes · ${top.description || ''}` : top.description || '';
+    const link = document.getElementById('topReelLink');
+    link.style.display = 'inline-flex';
+    link.href = top.url;
+  }
+
+  // Streak
+  const streak = calcStreak();
+  const badge  = document.getElementById('streakBadge');
+  if (streak >= 2) { badge.style.display = 'inline-flex'; document.getElementById('streakCount').textContent = streak; }
+  else badge.style.display = 'none';
+
+  // Chart
+  const labels   = sorted.map(l => l.date.slice(5));
+  const follData = sorted.map(l => l.followers);
+  if (followersChart) followersChart.destroy();
+  followersChart = new Chart(document.getElementById('followersChart'), {
+    type: 'line',
+    data: { labels, datasets: [{ data: follData, borderColor: '#c13584', backgroundColor: 'rgba(193,53,132,0.1)', fill: true, tension: 0.4, borderWidth: 2 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#7070a0', font: { size: 11 } } },
+        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#7070a0', font: { size: 11 } } }
+      },
+      elements: { point: { radius: sorted.length > 20 ? 0 : 3, hoverRadius: 5 } }
+    }
+  });
+
+  // Avg views card
+  if (reels.length) {
+    const totalAvg = Math.round(reels.reduce((s,r) => s + r.views, 0) / reels.length);
+    document.getElementById('avgAllVal').textContent = fmt(totalAvg);
+    const cutoff7 = Date.now() - 7 * 86400000;
+    const recent = reels.filter(r => r.posted_at && new Date(r.posted_at).getTime() >= cutoff7);
+    document.getElementById('avg7Val').textContent = recent.length
+      ? fmt(Math.round(recent.reduce((s,r) => s + r.views, 0) / recent.length))
+      : '—';
+  }
+
+  renderReels();
+  renderPlan();
+  renderTable(sorted);
+}
+
+// ── REELS LIST ────────────────────────────────────────────────────────
+function renderReels() {
+  const wrap = document.getElementById('reelsList');
+  // Sort by posted_at desc, take last 5
+  const last5 = [...reels]
+    .sort((a,b) => new Date(b.posted_at||0) - new Date(a.posted_at||0))
+    .slice(0, 5);
+  if (!last5.length) {
+    wrap.innerHTML = '<div class="empty"><p>Žádné reely.</p></div>';
+    return;
+  }
+  wrap.innerHTML = last5.map((r,i) => `
+    <div class="reel-item">
+      <div class="reel-num">${i+1}</div>
+      <div class="reel-info">
+        <div class="reel-views">${fmt(r.views)} views</div>
+        <div class="reel-label">${r.description || 'reel'} · ❤️ ${fmt(r.likes||0)}</div>
+      </div>
+      <a class="reel-link" href="${r.url}" target="_blank">↗</a>
+      <button onclick="deleteReel('${r.id}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0 0 0 4px;">🗑</button>
+    </div>
+  `).join('');
+}
+
+// ── PLÁN ──────────────────────────────────────────────────────────────
+const DAYS_CZ = ['Ne','Po','Út','St','Čt','Pá','So'];
+function renderPlan() {
+  const wrap  = document.getElementById('planDays');
+  const today = new Date();
+  let html = '';
+  for (let i = 0; i < 7; i++) {
+    const d   = new Date(today);
+    d.setDate(today.getDate() + i);
+    const key = d.toISOString().split('T')[0];
+    const note = plan[key] || '';
+    const dow  = DAYS_CZ[d.getDay()];
+    const dd   = String(d.getDate()).padStart(2,'0') + '.' + String(d.getMonth()+1).padStart(2,'0') + '.';
+    html += `
+      <div class="plan-day ${i === 0 ? 'today' : ''} ${note ? 'has-note' : ''}" onclick="openPlanModal('${key}','${dow} ${dd}')">
+        <div class="plan-date-label">
+          ${i === 0 ? '<div class="plan-date-today">DNES</div>' : ''}
+          <div class="plan-date-day">${dd}</div>
+          <div class="plan-date-dow">${dow}</div>
+        </div>
+        ${note
+          ? `<div class="plan-note-text">${note.replace(/\n/g,'<br>')}</div>`
+          : `<div class="plan-note-empty">Nic naplánováno…</div>`}
+        <button class="plan-edit-btn">✏️</button>
+      </div>`;
+  }
+  wrap.innerHTML = html;
+}
+
+// ── LOG TABLE ─────────────────────────────────────────────────────────
+function renderTable(sorted) {
+  const wrap = document.getElementById('logTableWrap');
+  if (!sorted.length) {
+    wrap.innerHTML = '<div class="empty"><p>Žádné záznamy. Přidej první.</p></div>';
+    return;
+  }
+  const rev = [...sorted].reverse();
+  let html = `<table><thead><tr>
+    <th>Datum</th><th>Sledující</th><th>Δ Sledující</th><th>Poznámka</th><th></th>
+  </tr></thead><tbody>`;
+  rev.forEach((log, i) => {
+    const prevLog = sorted[sorted.length - 1 - i - 1];
+    const dF = prevLog ? log.followers - prevLog.followers : null;
+    const dFH = dF !== null
+      ? `<span class="${dF>0?'tag-pos':dF<0?'tag-neg':'tag-neu'}">${dF>0?'+':''}${fmt(dF)}</span>`
+      : '<span class="tag-neu">—</span>';
+    html += `<tr>
+      <td>${log.date}</td>
+      <td><strong>${fmt(log.followers)}</strong></td>
+      <td>${dFH}</td>
+      <td style="color:var(--muted);font-size:12px">${log.note||''}</td>
+      <td><button onclick="deleteLog('${log.id}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;">🗑</button></td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+// ── LOG MODAL ─────────────────────────────────────────────────────────
+function openLogModal() {
+  document.getElementById('logDate').value      = new Date().toISOString().split('T')[0];
+  document.getElementById('logFollowers').value = '';
+  document.getElementById('logNote').value      = '';
+  document.getElementById('logModal').classList.add('open');
+}
+function closeLogModal() { document.getElementById('logModal').classList.remove('open'); }
+async function saveLog() {
+  const date      = document.getElementById('logDate').value;
+  const followers = parseInt(document.getElementById('logFollowers').value);
+  const note      = document.getElementById('logNote').value.trim();
+  if (!date || isNaN(followers)) { toast('Vyplň datum a sledující.', true); return; }
+  const btn = document.getElementById('saveLogBtn');
+  btn.disabled = true; btn.textContent = 'Ukládám…';
+  const { error } = await sb.from('logs').upsert({ date, followers, note }, { onConflict: 'date' });
+  btn.disabled = false; btn.textContent = 'Uložit';
+  if (error) { toast('Chyba: ' + error.message, true); return; }
+  closeLogModal();
+  await loadData();
+  render();
+  toast('Záznam uložen ✓');
+}
+async function deleteLog(id) {
+  if (!confirm('Smazat záznam?')) return;
+  const { error } = await sb.from('logs').delete().eq('id', id);
+  if (error) { toast('Chyba: ' + error.message, true); return; }
+  await loadData(); render();
+  toast('Záznam smazán');
+}
+
+// ── REEL MODAL ────────────────────────────────────────────────────────
+function openReelModal() {
+  ['reelUrl','reelViews','reelLikes','reelDesc','reelPostedAt'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('reelPostedAt').value = new Date().toISOString().split('T')[0];
+  document.getElementById('reelModal').classList.add('open');
+}
+function closeReelModal() { document.getElementById('reelModal').classList.remove('open'); }
+async function saveReel() {
+  const url    = document.getElementById('reelUrl').value.trim();
+  const views  = parseInt(document.getElementById('reelViews').value);
+  const likes  = parseInt(document.getElementById('reelLikes').value) || 0;
+  const desc   = document.getElementById('reelDesc').value.trim();
+  const datVal = document.getElementById('reelPostedAt').value;
+  if (!url || isNaN(views)) { toast('Vyplň URL a views.', true); return; }
+  const btn = document.getElementById('saveReelBtn');
+  btn.disabled = true; btn.textContent = 'Ukládám…';
+  const { error } = await sb.from('reels').upsert(
+    { url, views, likes, description: desc, posted_at: datVal ? datVal + 'T12:00:00Z' : new Date().toISOString() },
+    { onConflict: 'url' }
+  );
+  btn.disabled = false; btn.textContent = 'Uložit';
+  if (error) { toast('Chyba: ' + error.message, true); return; }
+  closeReelModal();
+  await loadData(); render();
+  toast('Reel uložen ✓');
+}
+async function deleteReel(id) {
+  if (!confirm('Smazat reel?')) return;
+  const { error } = await sb.from('reels').delete().eq('id', id);
+  if (error) { toast('Chyba: ' + error.message, true); return; }
+  await loadData(); render();
+  toast('Reel smazán');
+}
+
+// ── PLAN MODAL ────────────────────────────────────────────────────────
+let _planKey = '';
+function openPlanModal(key, label) {
+  _planKey = key;
+  document.getElementById('planModalTitle').textContent = '📅 ' + label;
+  document.getElementById('planNote').value = plan[key] || '';
+  document.getElementById('planModal').classList.add('open');
+}
+function closePlanModal() { document.getElementById('planModal').classList.remove('open'); }
+async function savePlanNote() {
+  const note = document.getElementById('planNote').value.trim();
+  const btn  = document.getElementById('savePlanBtn');
+  btn.disabled = true; btn.textContent = 'Ukládám…';
+  if (note) {
+    const { error } = await sb.from('plan').upsert({ date: _planKey, note }, { onConflict: 'date' });
+    if (error) { toast('Chyba: ' + error.message, true); btn.disabled = false; btn.textContent = 'Uložit'; return; }
+    plan[_planKey] = note;
+  } else {
+    const { error } = await sb.from('plan').delete().eq('date', _planKey);
+    if (error) { toast('Chyba: ' + error.message, true); btn.disabled = false; btn.textContent = 'Uložit'; return; }
+    delete plan[_planKey];
+  }
+  btn.disabled = false; btn.textContent = 'Uložit';
+  closePlanModal(); renderPlan();
+  toast('Plán uložen ✓');
+}
+async function clearPlanNote() {
+  const { error } = await sb.from('plan').delete().eq('date', _planKey);
+  if (error) { toast('Chyba: ' + error.message, true); return; }
+  delete plan[_planKey];
+  closePlanModal(); renderPlan();
+  toast('Plán smazán');
+}
+
+// ── SETTINGS ──────────────────────────────────────────────────────────
+function openSettings() { document.getElementById('settingsModal').classList.add('open'); }
+function closeSettings() { document.getElementById('settingsModal').classList.remove('open'); }
+
+// ── EXPORT ────────────────────────────────────────────────────────────
+function exportCSV() {
+  const sorted = [...logs].sort((a,b) => a.date.localeCompare(b.date));
+  let csv = 'Datum,Sledujici,Poznamka\n';
+  sorted.forEach(l => { csv += `${l.date},${l.followers},"${l.note||''}"\n`; });
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'ig-tracker.csv'; a.click();
+}
+
+// ── CLOSE ON OVERLAY CLICK ────────────────────────────────────────────
+['logModal','reelModal','planModal','settingsModal'].forEach(id => {
+  document.getElementById(id).addEventListener('click', e => {
+    if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
+  });
+});
+
+// ── INIT ─────────────────────────────────────────────────────────────
+(async function init() {
+  try {
+    await loadData();
+    await seedIfEmpty();
+    render();
+    document.getElementById('loadingOverlay').style.display = 'none';
+    document.getElementById('appContent').style.display = 'block';
+  } catch(e) {
+    document.querySelector('.loading-text').textContent = 'Chyba připojení: ' + e.message;
+    console.error(e);
+  }
+})();
+</script>
+</body>
+</html>
