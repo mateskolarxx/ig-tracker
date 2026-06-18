@@ -580,7 +580,7 @@ function render() {
 
   // Worst reel card
   if (reels.length) {
-    const worst = [...reels].sort((a,b) => a.views - b.views)[0];
+    const worst = [...reels].filter(r => r.views > 0).sort((a,b) => a.views - b.views)[0];
     document.getElementById('worstReelViews').textContent = fmt(worst.views);
     document.getElementById('worstReelDesc').textContent = worst.description
       ? `${worst.description} · ❤️ ${fmt(worst.likes||0)}`
