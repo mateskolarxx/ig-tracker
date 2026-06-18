@@ -475,18 +475,7 @@ async function seedIfEmpty() {
 
 // ── REFRESH ──────────────────────────────────────────────────────────
 async function doRefresh() {
-  const btn = document.getElementById('refreshBtn');
-  btn.textContent = '↻';
-  btn.style.animation = 'spin 0.8s linear infinite';
-  try {
-    await loadData();
-    render();
-    toast('Data aktualizována ✓');
-  } catch(e) {
-    toast('Chyba při načítání: ' + e.message, true);
-  } finally {
-    btn.style.animation = '';
-  }
+  location.reload();
 }
 
 // ── STREAK ────────────────────────────────────────────────────────────
