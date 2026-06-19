@@ -689,15 +689,6 @@ function render() {
     document.getElementById('avg7Val').textContent = avg7 !== null ? fmt(avg7) : '—';
     showDelta('avg7Delta', avg7, avgPrev, 'posl. 7 dní', 'předch. 7 dní');
 
-    // Engagement rate (views per follower)
-    if (avg7 && last && last.followers > 0) {
-      const rate = (avg7 / last.followers * 100).toFixed(1) + '%';
-      document.getElementById('engagementVal').textContent = rate;
-      document.getElementById('engagementSub').textContent =
-        `${fmt(avg7)} views ÷ ${fmt(last.followers)} sledujících`;
-    } else {
-      document.getElementById('engagementVal').textContent = '—';
-    }
   }
 
   renderReels();
