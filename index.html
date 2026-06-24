@@ -288,6 +288,24 @@
   </div>
 </div>
 
+<!-- Celkove views -->
+<div class="card">
+<div class="card-icon" style="background:rgba(131,58,180,0.15)">👁️</div>
+<div class="card-label">Celkové views</div>
+<div class="card-value" id="totalViewsVal">—</div>
+<div style="font-size:11px;color:var(--muted);margin-top:4px" id="totalViewsSub"></div>
+</div>
+
+<!-- Celkove likes a komentare -->
+<div class="card">
+<div class="card-icon" style="background:rgba(239,68,68,0.12)">❤️</div>
+<div class="card-label">Likes & komentáře</div>
+<div class="card-value" id="totalLikesVal">—</div>
+<div style="font-size:11px;color:var(--muted);margin-top:4px">celkové likes</div>
+<div style="height:1px;background:var(--border);margin:12px 0"></div>
+<div style="font-size:22px;font-weight:800;letter-spacing:-0.5px" id="totalCommentsVal">—</div>
+<div style="font-size:11px;color:var(--muted);margin-top:4px">celkové komentáře</div>
+</div>
 <!-- FOLLOWERS CHART -->
 <div class="chart-card">
   <div class="chart-title">📈 Růst sledujících</div>
@@ -691,6 +709,15 @@ function render() {
 
   }
 
+  if (reels.length) {
+    var totalViews = reels.reduce(function(s,r){ return s+(r.views||0); }, 0);
+    var totalLikes = reels.reduce(function(s,r){ return s+(r.likes||0); }, 0);
+    var totalComments = reels.reduce(function(s,r){ return s+(r.comments||0); }, 0);
+    document.getElementById("totalViewsVal").textContent = fmt(totalViews);
+    document.getElementById("totalViewsSub").textContent = "průměr "+fmt(Math.round(totalViews/reels.length))+" / reel";
+    document.getElementById("totalLikesVal").textContent = fmt(totalLikes);
+    document.getElementById("totalCommentsVal").textContent = totalComments > 0 ? fmt(totalComments) : "—";
+  }
   renderReels();
   renderPlan();
   renderTable(sorted);
