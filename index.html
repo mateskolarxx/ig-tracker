@@ -288,23 +288,29 @@
   </div>
 </div>
 
-<!-- Celkove views -->
-<div class="card">
-<div class="card-icon" style="background:rgba(131,58,180,0.15)">👁️</div>
-<div class="card-label">Celkové views</div>
-<div class="card-value" id="totalViewsVal">—</div>
-<div style="font-size:11px;color:var(--muted);margin-top:4px" id="totalViewsSub"></div>
+<!-- Denni rust -->
+<div class="card" style="grid-column:1/-1">
+<div class="card-icon" style="background:rgba(252,176,69,0.15)">📅</div>
+<div class="card-label">Růst za dnešní den</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:16px;margin-top:8px">
+  <div>
+    <div style="font-size:28px;font-weight:800;letter-spacing:-1px" id="dailyViewsVal">—</div>
+    <div style="font-size:11px;color:var(--muted);margin-top:2px">views dnes</div>
+  </div>
+  <div>
+    <div style="font-size:28px;font-weight:800;letter-spacing:-1px" id="dailyLikesVal">—</div>
+    <div style="font-size:11px;color:var(--muted);margin-top:2px">likes dnes</div>
+  </div>
+  <div>
+    <div style="font-size:28px;font-weight:800;letter-spacing:-1px" id="dailyCommentsVal">—</div>
+    <div style="font-size:11px;color:var(--muted);margin-top:2px">komentáře dnes</div>
+  </div>
+  <div>
+    <div style="font-size:28px;font-weight:800;letter-spacing:-1px" id="dailyFollowersVal">—</div>
+    <div style="font-size:11px;color:var(--muted);margin-top:2px">sledující dnes</div>
+  </div>
 </div>
-
-<!-- Celkove likes a komentare -->
-<div class="card">
-<div class="card-icon" style="background:rgba(239,68,68,0.12)">❤️</div>
-<div class="card-label">Likes & komentáře</div>
-<div class="card-value" id="totalLikesVal">—</div>
-<div style="font-size:11px;color:var(--muted);margin-top:4px">celkové likes</div>
-<div style="height:1px;background:var(--border);margin:12px 0"></div>
-<div style="font-size:22px;font-weight:800;letter-spacing:-0.5px" id="totalCommentsVal">—</div>
-<div style="font-size:11px;color:var(--muted);margin-top:4px">celkové komentáře</div>
+<div style="font-size:11px;color:var(--muted);margin-top:10px" id="dailyCompareLabel">porovnání s předchozím dnem</div>
 </div>
 <!-- FOLLOWERS CHART -->
 <div class="chart-card">
@@ -580,6 +586,28 @@ function render() {
   }
 
   // Top reel card
+  // Daily growth from logs
+  if (sorted.length >= 2) {
+    var todayLog = sorted[sorted.length - 1];
+    var yestLog  = sorted[sorted.length - 2];
+    function dailyVal(curr, prev, elId) {
+      var el = document.getElementById(elId);
+      if (curr != null && prev != null) {
+        var diff = curr - prev;
+        var sign = diff > 0 ? "+" : "";
+        el.textContent = sign + fmt(diff);
+        el.style.color = diff > 0 ? "var(--green)" : diff < 0 ? "var(--red)" : "var(--muted)";
+      } else if (curr != null) {
+        el.textContent = fmt(curr);
+        el.style.color = "var(--muted)";
+      }
+    }
+    dailyVal(todayLog.total_views,    yestLog.total_views,    "dailyViewsVal");
+    dailyVal(todayLog.total_likes,    yestLog.total_likes,    "dailyLikesVal");
+    dailyVal(todayLog.total_comments, yestLog.total_comments, "dailyCommentsVal");
+    dailyVal(todayLog.followers,      yestLog.followers,      "dailyFollowersVal");
+    document.getElementById("dailyCompareLabel").textContent = "vs. " + yestLog.date;
+  }
   if (reels.length) {
     const top = [...reels].sort((a,b) => b.views - a.views)[0];
     document.getElementById('topReelViews').textContent = fmt(top.views);
@@ -709,15 +737,6 @@ function render() {
 
   }
 
-  if (reels.length) {
-    var totalViews = reels.reduce(function(s,r){ return s+(r.views||0); }, 0);
-    var totalLikes = reels.reduce(function(s,r){ return s+(r.likes||0); }, 0);
-    var totalComments = reels.reduce(function(s,r){ return s+(r.comments||0); }, 0);
-    document.getElementById("totalViewsVal").textContent = fmt(totalViews);
-    document.getElementById("totalViewsSub").textContent = "průměr "+fmt(Math.round(totalViews/reels.length))+" / reel";
-    document.getElementById("totalLikesVal").textContent = fmt(totalLikes);
-    document.getElementById("totalCommentsVal").textContent = totalComments > 0 ? fmt(totalComments) : "—";
-  }
   renderReels();
   renderPlan();
   renderTable(sorted);
