@@ -288,6 +288,25 @@
   </div>
 </div>
 
+<!-- Celkove views -->
+<div class="card">
+<div class="card-icon" style="background:rgba(131,58,180,0.15)">👁️</div>
+<div class="card-label">Celkové views</div>
+<div class="card-value" id="totalViewsVal">—</div>
+<div style="font-size:11px;color:var(--muted);margin-top:4px" id="totalViewsSub"></div>
+</div>
+
+<!-- Celkove likes -->
+<div class="card">
+<div class="card-icon" style="background:rgba(239,68,68,0.12)">❤️</div>
+<div class="card-label">Likes & komentáře</div>
+<div class="card-value" id="totalLikesVal">—</div>
+<div style="font-size:11px;color:var(--muted);margin-top:4px">celkové likes</div>
+<div style="height:1px;background:var(--border);margin:12px 0"></div>
+<div style="font-size:22px;font-weight:800;letter-spacing:-0.5px" id="totalCommentsVal">—</div>
+<div style="font-size:11px;color:var(--muted);margin-top:4px">celkové komentáře</div>
+</div>
+
 <!-- Denni rust -->
 <div class="card" style="grid-column:1/-1">
 <div class="card-icon" style="background:rgba(252,176,69,0.15)">📅</div>
@@ -737,6 +756,15 @@ function render() {
 
   }
 
+  if (reels.length) {
+    var tv = reels.reduce(function(s,r){return s+(r.views||0);},0);
+    var tl = reels.reduce(function(s,r){return s+(r.likes||0);},0);
+    var tc = reels.reduce(function(s,r){return s+(r.comments||0);},0);
+    document.getElementById("totalViewsVal").textContent = fmt(tv);
+    document.getElementById("totalViewsSub").textContent = "průměr "+fmt(Math.round(tv/reels.length))+" / reel";
+    document.getElementById("totalLikesVal").textContent = fmt(tl);
+    document.getElementById("totalCommentsVal").textContent = tc > 0 ? fmt(tc) : "—";
+  }
   renderReels();
   renderPlan();
   renderTable(sorted);
