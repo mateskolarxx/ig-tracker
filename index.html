@@ -643,15 +643,20 @@ function render() {
   // Worst reel card
   if (reels.length) {
     const threeDaysAgo = new Date(); threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-    const worst = [...reels].filter(r => r.views > 0 && r.posted_at && new Date(r.posted_at) < threeDaysAgo).sort((a,b) => a.views - b.views)[0]
-      || [...reels].filter(r => r.views > 0).sort((a,b) => a.views - b.views)[0];
-    document.getElementById('worstReelViews').textContent = fmt(worst.views);
-    document.getElementById('worstReelDesc').textContent = worst.description
-      ? `${worst.description} · ❤️ ${fmt(worst.likes||0)}`
-      : `❤️ ${fmt(worst.likes||0)} likes`;
-    const wlink = document.getElementById('worstReelLink');
-    wlink.style.display = 'inline-flex';
-    wlink.href = worst.url;
+    const worst = [...reels].filter(r => r.views > 0 && r.posted_at && new Date(r.posted_at) < threeDaysAgo).sort((a,b) => a.views - b.views)[0];
+    if (worst) {
+      document.getElementById('worstReelViews').textContent = fmt(worst.views);
+      document.getElementById('worstReelDesc').textContent = worst.description
+        ? `${worst.description} · ❤️ ${fmt(worst.likes||0)}`
+        : `❤️ ${fmt(worst.likes||0)} likes`;
+      const wlink = document.getElementById('worstReelLink');
+      wlink.style.display = 'inline-flex';
+      wlink.href = worst.url;
+    } else {
+      document.getElementById('worstReelViews').textContent = '—';
+      document.getElementById('worstReelDesc').textContent = 'Zatím žádný reel starší 3 dní';
+      document.getElementById('worstReelLink').style.display = 'none';
+    }
   }
 
   // Streak
