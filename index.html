@@ -531,18 +531,19 @@ async function seedIfEmpty() {
     if (!error && data) reels = data;
   }
 
-  if (!Object.keys(plan).length) {
-    const today = new Date();
-    const planRows = [];
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() + i);
-      const key = d.toISOString().split('T')[0];
-      planRows.push({ date: key, note: '📹 10:00 – vydání videa\n📹 19:00 – vydání videa' });
-      plan[key] = '📹 10:00 – vydání videa\n📹 19:00 – vydání videa';
+  const DEFAULT_NOTE = '🧪 9:00 – trial reel\n📹 19:00 – normální reel';
+  const today = new Date();
+  const planRows = [];
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    const key = d.toISOString().split('T')[0];
+    if (!plan[key]) {
+      planRows.push({ date: key, note: DEFAULT_NOTE });
+      plan[key] = DEFAULT_NOTE;
     }
-    await sb.from('plan').insert(planRows);
   }
+  if (planRows.length) await sb.from('plan').upsert(planRows, { onConflict: 'date' });
 }
 
 // ── REFRESH ──────────────────────────────────────────────────────────
