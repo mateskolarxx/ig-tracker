@@ -745,7 +745,7 @@ function render() {
         el.textContent = (pct > 0 ? '+' : '') + pct.toFixed(1) + '%';
         el.style.background = pct > 0 ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)';
         el.style.color = pct > 0 ? 'var(--green)' : 'var(--red)';
-        el.title = `${newLabel || 'nové'}: ø ${fmt(newAvg)} views  →  ${oldLabel || 'předchozí'}: ø ${fmt(oldAvg)} views`;
+        el.setAttribute('data-tip', `${newLabel}: ø ${fmt(newAvg)} views vs ${oldLabel}: ø ${fmt(oldAvg)} views`);
       } else {
         el.style.display = 'none';
       }
