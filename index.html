@@ -186,6 +186,9 @@
 
   .empty { text-align: center; padding: 30px; color: var(--muted); }
   .grad { background: linear-gradient(90deg, var(--accent), var(--gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  [data-tip] { position: relative; }
+  [data-tip]::after { content: attr(data-tip); position: absolute; bottom: calc(100% + 6px); left: 0; background: #1e1e2e; color: #e2e8f0; font-size: 11px; font-weight: 500; padding: 5px 9px; border-radius: 8px; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 0s; z-index: 99; border: 1px solid rgba(255,255,255,0.1); }
+  [data-tip]:hover::after { opacity: 1; }
   .streak-badge { background: linear-gradient(135deg, var(--gold), var(--accent3)); color: #000; font-weight: 700; font-size: 12px; padding: 4px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px; }
 
   /* LOADING */
@@ -247,7 +250,7 @@
     <div class="card-label">Sledující</div>
     <div style="position:relative;display:inline-block">
       <div class="card-value" id="followersVal">—</div>
-      <div id="growth7pct" style="display:none;background:rgba(34,197,94,0.15);color:#22c55e;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap;width:fit-content;margin-top:4px;cursor:help"></div>
+      <div id="growth7pct" style="display:none;background:rgba(34,197,94,0.15);color:#22c55e;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap;width:fit-content;margin-top:4px;cursor:default"></div>
     </div>
     <div class="card-delta" id="followersDelta" style="margin-top:10px"><span class="delta-neu">Žádná data</span></div>
   </div>
@@ -598,7 +601,7 @@ function render() {
       const pct = ((last.followers - base7.followers) / base7.followers * 100).toFixed(1);
       g7el.style.display = 'block';
       g7el.textContent   = '+' + pct + '%';
-      g7el.title = `${base7.date}: ${base7.followers.toLocaleString('cs')} sledujících  →  dnes: ${last.followers.toLocaleString('cs')} sledujících`;
+      g7el.setAttribute('data-tip', `Růst flws za posl. 7 dní: ${base7.followers.toLocaleString('cs')} → ${last.followers.toLocaleString('cs')}`);
     } else {
       g7el.style.display = 'none';
     }
