@@ -245,10 +245,8 @@
   <div class="card">
     <div class="card-icon icon-pink">👥</div>
     <div class="card-label">Sledující</div>
-    <div style="position:relative;display:inline-block">
-      <div class="card-value" id="followersVal">—</div>
-      <div id="growth7pct" style="display:none;position:absolute;top:-6px;right:-48px;background:rgba(34,197,94,0.15);color:#22c55e;font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;white-space:nowrap"></div>
-    </div>
+    <div class="card-value" id="followersVal">—</div>
+    <div id="growth7pct" style="display:none;background:rgba(34,197,94,0.15);color:#22c55e;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap;width:fit-content;margin-top:4px;cursor:help"></div>
     <div class="card-delta" id="followersDelta" style="margin-top:10px"><span class="delta-neu">Žádná data</span></div>
   </div>
 
@@ -597,7 +595,7 @@ function render() {
     if (base7 && base7.followers > 0 && last.followers > base7.followers) {
       const pct = ((last.followers - base7.followers) / base7.followers * 100).toFixed(1);
       g7el.style.display = 'block';
-      g7el.textContent   = '+' + pct + '% 7d';
+      g7el.textContent   = '+' + pct + '%';
       g7el.title = `${base7.date}: ${base7.followers.toLocaleString('cs')} sledujících  →  dnes: ${last.followers.toLocaleString('cs')} sledujících`;
     } else {
       g7el.style.display = 'none';
