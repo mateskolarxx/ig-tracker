@@ -51,30 +51,32 @@
   .btn-sm:hover { border-color: var(--accent); color: var(--text); }
 
   /* PROFILE CARDS */
-  .profiles-list { display: flex; flex-direction: column; gap: 12px; }
+  .profiles-list { display: flex; flex-direction: column; gap: 16px; }
 
-  .profile-accordion {
-    background: var(--bg2); border: 1px solid var(--border);
-    border-radius: 16px; overflow: hidden; transition: border-color 0.2s;
+  /* 3 čtverečky vedle sebe */
+  .profiles-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
   }
-  .profile-accordion.open { border-color: rgba(193,53,132,0.5); }
+  @media (max-width: 700px) { .profiles-grid { grid-template-columns: 1fr; } }
 
-  .profile-summary {
-    display: flex; align-items: center; gap: 16px; padding: 18px 20px;
-    cursor: pointer; user-select: none; transition: background 0.15s;
+  .profile-card {
+    background: var(--bg2); border: 2px solid var(--border);
+    border-radius: 20px; padding: 24px 20px; cursor: pointer;
+    transition: border-color 0.2s, background 0.2s; user-select: none;
+    display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px;
+    min-height: 180px; justify-content: center;
   }
-  .profile-summary:hover { background: rgba(255,255,255,0.02); }
+  .profile-card:hover { border-color: rgba(193,53,132,0.4); background: rgba(193,53,132,0.04); }
+  .profile-card.active { border-color: rgba(193,53,132,0.7); background: rgba(193,53,132,0.08); }
 
-  .profile-emoji { font-size: 28px; flex-shrink: 0; }
+  .profile-emoji { font-size: 36px; }
+  .profile-handle { font-size: 15px; font-weight: 700; }
+  .profile-label { font-size: 12px; color: var(--muted); }
 
-  .profile-info { flex: 1; min-width: 0; }
-  .profile-handle { font-size: 16px; font-weight: 700; }
-  .profile-label { font-size: 12px; color: var(--muted); margin-top: 2px; }
-
-  .profile-stats { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
-  .pstat { text-align: right; }
-  .pstat-val { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
-  .pstat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .profile-stats { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
+  .pstat { text-align: center; }
+  .pstat-val { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
+  .pstat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
 
   .growth-badge {
     background: rgba(34,197,94,0.15); color: var(--green);
@@ -83,15 +85,12 @@
   }
   .growth-badge.neg { background: rgba(239,68,68,0.15); color: var(--red); }
 
-  .accordion-arrow {
-    font-size: 14px; color: var(--muted); transition: transform 0.2s; flex-shrink: 0;
+  /* Detail panel pod gridem */
+  .profile-detail-panel {
+    display: none; background: var(--bg2); border: 1px solid rgba(193,53,132,0.3);
+    border-radius: 20px; padding: 24px;
   }
-  .profile-accordion.open .accordion-arrow { transform: rotate(180deg); }
-
-  .profile-detail {
-    display: none; border-top: 1px solid var(--border); padding: 20px;
-  }
-  .profile-accordion.open .profile-detail { display: block; }
+  .profile-detail-panel.open { display: block; }
 
   /* LOADING STATE INSIDE DETAIL */
   .detail-loading { text-align: center; padding: 40px; color: var(--muted); }
@@ -305,7 +304,10 @@
   </div>
 </div>
 
-<div class="profiles-list" id="profilesList"></div>
+<div class="profiles-list">
+  <div class="profiles-grid" id="profilesGrid"></div>
+  <div class="profile-detail-panel" id="profileDetailPanel"></div>
+</div>
 
 </div><!-- /appContent -->
 
@@ -476,9 +478,9 @@ function calcStreak(logs) {
 
 // ── RENDER MAIN PROFILES LIST ─────────────────────────────────────────
 function renderProfilesList(summaries) {
-  const wrap = document.getElementById('profilesList');
-  wrap.innerHTML = '';
-  PROFILES.forEach((p, idx) => {
+  const grid = document.getElementById('profilesGrid');
+  grid.innerHTML = '';
+  PROFILES.forEach((p) => {
     const sum = summaries.find(s => s.handle === p.handle) || { logs: [], reels: [] };
     const sortedLogs = [...sum.logs].sort((a,b) => a.date.localeCompare(b.date));
     const last = sortedLogs[sortedLogs.length - 1];
@@ -489,71 +491,67 @@ function renderProfilesList(summaries) {
       const pct = ((last.followers - base7.followers) / base7.followers * 100);
       const cls = pct >= 0 ? '' : ' neg';
       const sign = pct >= 0 ? '+' : '';
-      growthBadge = `<div class="growth-badge${cls}" data-tip="Sledující: ${base7.followers.toLocaleString('cs')} → ${last ? last.followers.toLocaleString('cs') : '?'}">${sign}${pct.toFixed(1)}% 7d</div>`;
+      growthBadge = `<div class="growth-badge${cls}" data-tip="Sledující: ${base7.followers.toLocaleString('cs')} → ${last.followers.toLocaleString('cs')}">${sign}${pct.toFixed(1)}%</div>`;
     }
     const avgViews = sum.reels.length
       ? Math.round(sum.reels.reduce((s,r) => s + (r.views||0), 0) / sum.reels.length)
       : null;
 
-    const el = document.createElement('div');
-    el.className = 'profile-accordion';
-    el.id = 'accordion-' + p.handle;
-    el.innerHTML = `
-      <div class="profile-summary" onclick="toggleAccordion('${p.handle}')">
-        <div class="profile-emoji">${p.emoji}</div>
-        <div class="profile-info">
-          <div class="profile-handle">@${p.handle}</div>
-          <div class="profile-label">${p.label}</div>
-        </div>
-        <div class="profile-stats">
-          <div class="pstat">
-            <div class="pstat-val">${last ? fmt(last.followers) : '—'}</div>
-            <div class="pstat-label">Sledující</div>
-          </div>
-          <div class="pstat" style="min-width:80px">
-            ${growthBadge}
-            ${!growthBadge ? '<div class="pstat-val" style="font-size:13px;color:var(--muted)">—</div>' : ''}
-          </div>
-          <div class="pstat">
-            <div class="pstat-val">${avgViews !== null ? fmt(avgViews) : '—'}</div>
-            <div class="pstat-label">Ø Views</div>
-          </div>
-        </div>
-        <div class="accordion-arrow">▼</div>
+    const card = document.createElement('div');
+    card.className = 'profile-card';
+    card.id = 'card-' + p.handle;
+    card.onclick = () => toggleAccordion(p.handle);
+    card.innerHTML = `
+      <div class="profile-emoji">${p.emoji}</div>
+      <div>
+        <div class="profile-handle">@${p.handle}</div>
+        <div class="profile-label">${p.label}</div>
       </div>
-      <div class="profile-detail" id="detail-${p.handle}">
-        <div class="detail-loading"><div class="spinner-sm"></div> Načítám detail…</div>
+      <div class="profile-stats">
+        <div class="pstat">
+          <div class="pstat-val">${last ? fmt(last.followers) : '—'}</div>
+          <div class="pstat-label">Sledující</div>
+        </div>
+        <div class="pstat">
+          <div class="pstat-val">${avgViews !== null ? fmt(avgViews) : '—'}</div>
+          <div class="pstat-label">Ø Views</div>
+        </div>
       </div>
+      ${growthBadge}
     `;
-    wrap.appendChild(el);
+    grid.appendChild(card);
   });
 }
 
 // ── TOGGLE ACCORDION ──────────────────────────────────────────────────
-const openAccordions = new Set();
+let activeHandle = null;
 
 async function toggleAccordion(handle) {
-  const acc = document.getElementById('accordion-' + handle);
-  const detail = document.getElementById('detail-' + handle);
-  const isOpen = openAccordions.has(handle);
+  const panel = document.getElementById('profileDetailPanel');
 
-  if (isOpen) {
-    acc.classList.remove('open');
-    openAccordions.delete(handle);
+  // Kliknutí na stejnou kartu → zavřít
+  if (activeHandle === handle) {
+    activeHandle = null;
+    document.querySelectorAll('.profile-card').forEach(c => c.classList.remove('active'));
+    panel.classList.remove('open');
+    panel.innerHTML = '';
     return;
   }
 
-  acc.classList.add('open');
-  openAccordions.add(handle);
+  // Aktivuj kartu
+  activeHandle = handle;
+  document.querySelectorAll('.profile-card').forEach(c => c.classList.remove('active'));
+  document.getElementById('card-' + handle)?.classList.add('active');
+  panel.classList.add('open');
 
   const state = profileState[handle];
   if (!state.loaded) {
-    detail.innerHTML = '<div class="detail-loading"><div class="spinner-sm"></div> Načítám detail…</div>';
+    panel.innerHTML = '<div class="detail-loading"><div class="spinner-sm"></div> Načítám detail…</div>';
     try {
       await loadProfileDetail(handle);
       await seedPlan(handle);
     } catch(e) {
-      detail.innerHTML = '<div class="detail-loading" style="color:var(--red)">Chyba: ' + e.message + '</div>';
+      panel.innerHTML = '<div class="detail-loading" style="color:var(--red)">Chyba: ' + e.message + '</div>';
       return;
     }
   }
@@ -568,7 +566,7 @@ function renderDetail(handle) {
   const sorted = [...logs].sort((a,b) => a.date.localeCompare(b.date));
   const last   = sorted[sorted.length - 1];
   const prev   = sorted[sorted.length - 2];
-  const detail = document.getElementById('detail-' + handle);
+  const detail = document.getElementById('profileDetailPanel');
 
   // Streak
   const streak = calcStreak(logs);
