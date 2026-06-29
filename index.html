@@ -676,24 +676,38 @@ function renderDetail(handle) {
 
   // Daily growth
   let dailyHtml = '';
-  if (sorted.length >= 2) {
-    const todayLog = sorted[sorted.length - 1];
-    const yestLog  = sorted[sorted.length - 2];
-    function dailyDiff(curr, prev) {
-      if (curr != null && prev != null) {
-        const d = curr - prev;
-        const sign = d > 0 ? '+' : '';
-        const col = d > 0 ? 'var(--green)' : d < 0 ? 'var(--red)' : 'var(--muted)';
-        return `<span style="color:${col}">${sign}${fmt(d)}</span>`;
+  let dailySubtitle = '';
+  const todayLog = sorted[sorted.length - 1];
+  if (todayLog) {
+    if (sorted.length >= 2) {
+      const yestLog = sorted[sorted.length - 2];
+      function dailyDiff(curr, prev) {
+        if (curr != null && prev != null) {
+          const d = curr - prev;
+          const sign = d > 0 ? '+' : '';
+          const col = d > 0 ? 'var(--green)' : d < 0 ? 'var(--red)' : 'var(--muted)';
+          return `<span style="color:${col}">${sign}${fmt(d)}</span>`;
+        }
+        return `<span style="color:var(--muted)">${fmt(curr) || '—'}</span>`;
       }
-      return `<span style="color:var(--muted)">${fmt(curr)}</span>`;
+      dailyHtml = `
+        <div><div style="font-size:28px;font-weight:800;letter-spacing:-1px">${dailyDiff(todayLog.total_views, yestLog.total_views)}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">views dnes</div></div>
+        <div><div style="font-size:28px;font-weight:800;letter-spacing:-1px">${dailyDiff(todayLog.total_likes, yestLog.total_likes)}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">likes dnes</div></div>
+        <div><div style="font-size:28px;font-weight:800;letter-spacing:-1px">${dailyDiff(todayLog.total_comments, yestLog.total_comments)}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">komentáře dnes</div></div>
+        <div><div style="font-size:28px;font-weight:800;letter-spacing:-1px">${dailyDiff(todayLog.followers, yestLog.followers)}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">sledující dnes</div></div>
+      `;
+      dailySubtitle = `vs. ${yestLog.date}`;
+    } else {
+      // Jen 1 záznam — ukáž aktuální hodnoty
+      const val = (v) => `<span style="color:var(--text)">${fmt(v) || '—'}</span>`;
+      dailyHtml = `
+        <div><div style="font-size:28px;font-weight:800;letter-spacing:-1px">${val(todayLog.total_views)}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">celkem views</div></div>
+        <div><div style="font-size:28px;font-weight:800;letter-spacing:-1px">${val(todayLog.total_likes)}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">celkem likes</div></div>
+        <div><div style="font-size:28px;font-weight:800;letter-spacing:-1px">${val(todayLog.total_comments)}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">celkem komentáře</div></div>
+        <div><div style="font-size:28px;font-weight:800;letter-spacing:-1px">${val(todayLog.followers)}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">sledující</div></div>
+      `;
+      dailySubtitle = `první sync – ${todayLog.date}`;
     }
-    dailyHtml = `
-      <div><div style="font-size:28px;font-weight:800;letter-spacing:-1px">${dailyDiff(todayLog.total_views, yestLog.total_views)}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">views dnes</div></div>
-      <div><div style="font-size:28px;font-weight:800;letter-spacing:-1px">${dailyDiff(todayLog.total_likes, yestLog.total_likes)}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">likes dnes</div></div>
-      <div><div style="font-size:28px;font-weight:800;letter-spacing:-1px">${dailyDiff(todayLog.total_comments, yestLog.total_comments)}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">komentáře dnes</div></div>
-      <div><div style="font-size:28px;font-weight:800;letter-spacing:-1px">${dailyDiff(todayLog.followers, yestLog.followers)}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">sledující dnes</div></div>
-    `;
   }
 
   // Plan HTML (7 days)
@@ -827,14 +841,14 @@ function renderDetail(handle) {
     </div>
 
     <!-- DAILY GROWTH -->
-    ${sorted.length >= 2 ? `
+    ${dailyHtml ? `
     <div class="card" style="margin-bottom:24px">
       <div class="card-icon" style="background:rgba(252,176,69,0.15)">📅</div>
       <div class="card-label">Růst za dnešní den</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:16px;margin-top:8px">
         ${dailyHtml}
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:10px">vs. ${sorted[sorted.length - 2].date}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:10px">${dailySubtitle}</div>
     </div>
     ` : ''}
 
