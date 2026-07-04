@@ -864,6 +864,43 @@ function renderDetail(handle) {
       <div class="chart-wrap"><canvas id="${chartReelsId}"></canvas></div>
     </div>
 
+    <!-- NADPRŮMĚRNÉ REELY -->
+    ${(() => {
+      const avg = totalAvg;
+      const aboveAvg = [...reels]
+        .filter(r => r.views > avg)
+        .sort((a,b) => b.views - a.views);
+      if (!aboveAvg.length) return '';
+      const rows = aboveAvg.map((r, i) => {
+        const date = r.posted_at ? new Date(r.posted_at).toLocaleDateString('cs-CZ', {day:'2-digit',month:'2-digit',year:'2-digit'}) : '—';
+        const desc = r.description ? r.description.slice(0,40) + (r.description.length > 40 ? '…' : '') : 'reel';
+        const pct = Math.round((r.views / avg - 1) * 100);
+        return `<tr>
+          <td style="color:var(--muted);font-size:12px;width:28px">${i+1}</td>
+          <td style="font-weight:700">${fmt(r.views)}</td>
+          <td><span class="tag-pos">+${pct}%</span></td>
+          <td style="font-size:12px;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${desc}</td>
+          <td style="font-size:12px">❤️ ${fmt(r.likes||0)}</td>
+          <td style="font-size:12px;color:var(--muted)">${date}</td>
+          <td><a href="${r.url}" target="_blank" style="color:var(--accent);font-size:13px;text-decoration:none">↗</a></td>
+        </tr>`;
+      }).join('');
+      return `
+      <div class="log-card" style="margin-bottom:24px">
+        <div class="log-header">
+          <div class="log-title">⭐ Nadprůměrné reely <span style="font-weight:400;font-size:12px;color:var(--muted);margin-left:6px">(průměr ${fmt(avg)} views · ${aboveAvg.length} reelů)</span></div>
+        </div>
+        <div style="overflow-x:auto">
+          <table style="width:100%">
+            <thead><tr>
+              <th>#</th><th>Views</th><th>vs. průměr</th><th>Popis</th><th>Likes</th><th>Datum</th><th></th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>`;
+    })()}
+
     <!-- REELS + PLÁN -->
     <div class="bottom-grid">
       <div class="section-card">
