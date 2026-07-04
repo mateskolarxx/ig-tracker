@@ -1493,7 +1493,7 @@ let _ofModalHandle = '';
 
 function openOfModal(handle) {
   _ofModalHandle = handle;
-  document.getElementById('ofDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('ofDate').value = new Date(Date.now() - 86400000).toISOString().split('T')[0];
   document.getElementById('ofSubs').value = '';
   document.getElementById('ofModal').classList.add('open');
   setTimeout(() => document.getElementById('ofSubs').focus(), 100);
