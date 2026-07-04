@@ -866,7 +866,7 @@ function renderDetail(handle) {
 
     <!-- NADPRŮMĚRNÉ REELY -->
     ${(() => {
-      const avg = totalAvg;
+      const avg = reels.length ? Math.round(tv / reels.length) : 0;
       const aboveAvg = [...reels]
         .filter(r => r.views > avg)
         .sort((a,b) => b.views - a.views);
