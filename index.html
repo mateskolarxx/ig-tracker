@@ -1425,7 +1425,7 @@ function doLogin() {
   const btn   = document.getElementById('loginBtn');
   const err   = document.getElementById('loginError');
   if (btoa(input.value) === _PH) {
-    sessionStorage.setItem(_AK, _PH);
+    localStorage.setItem(_AK, _PH);
     btn.classList.add('success');
     err.textContent = '';
     setTimeout(() => {
@@ -1481,7 +1481,7 @@ async function saveOfSubs() {
 // ── INIT ─────────────────────────────────────────────────────────────
 (async function init() {
   spawnParticles();
-  if (sessionStorage.getItem(_AK) === _PH) {
+  if (localStorage.getItem(_AK) === _PH) {
     document.getElementById('loginScreen').style.display = 'none';
   }
   try {
