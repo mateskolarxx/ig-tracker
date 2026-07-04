@@ -479,9 +479,9 @@ const sb = window.supabase.createClient(SB_URL, SB_KEY);
 
 // ── PROFILES CONFIG ───────────────────────────────────────────────────
 const PROFILES = [
-  { handle: 'stelinkax',    label: 'Stela',    emoji: '⭐' },
-  { handle: 'laurriii.x',  label: 'Lauri #1', emoji: '💫' },
-  { handle: '_laurinkaa2_', label: 'Lauri #2', emoji: '🌸' },
+  { handle: 'stelinkax',    label: 'Stela',    emoji: '⭐', ofHandle: 'of_stela'  },
+  { handle: 'laurriii.x',  label: 'Lauri #1', emoji: '💫', ofHandle: 'of_laura'  },
+  { handle: '_laurinkaa2_', label: 'Lauri #2', emoji: '🌸', ofHandle: 'of_laura'  },
 ];
 
 // ── STATE ──────────────────────────────────────────────────────────────
@@ -541,7 +541,7 @@ async function loadProfileDetail(handle) {
     sb.from('logs').select('*').eq('profile', handle).order('date', { ascending: true }),
     sb.from('reels').select('*').eq('profile', handle).order('posted_at', { ascending: false }),
     sb.from('plan').select('*').eq('profile', handle).order('date', { ascending: true }),
-    sb.from('logs').select('date,followers').eq('profile', 'of_' + handle).order('date', { ascending: true }),
+    sb.from('logs').select('date,followers').eq('profile', PROFILES.find(p=>p.handle===handle)?.ofHandle || 'of_'+handle).order('date', { ascending: true }),
   ]);
   if (logsRes.error)  throw logsRes.error;
   if (reelsRes.error) throw reelsRes.error;
@@ -990,7 +990,12 @@ function renderDetail(handle) {
           ${histHtml}
           <button class="btn-sm" style="margin-top:12px;width:100%" onclick="openOfModal('${handle}')">+ Přidat záznam</button>
         </div>
-      </div>`;
+      </div>
+      ${ofLogs.length >= 2 ? `
+      <div class="chart-card" style="margin-bottom:24px">
+        <div class="chart-title">💎 OnlyFans Subs – vývoj</div>
+        <div class="chart-wrap"><canvas id="ofChart-${handle}"></canvas></div>
+      </div>` : ''}`;
     })()}
 
     <!-- DAILY GROWTH -->
@@ -1087,6 +1092,7 @@ function renderDetail(handle) {
   // Render charts
   renderFollowersChart(handle, sorted);
   renderReelsChart(handle, reels);
+  renderOfChart(handle, profileState[handle].ofLogs || []);
 }
 
 // ── CHARTS ────────────────────────────────────────────────────────────
@@ -1150,6 +1156,31 @@ function renderReelsChart(handle, reels) {
       scales: {
         x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#7070a0', font: { size: 11 } } },
         y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#7070a0', font: { size: 11 }, callback: v => fmt(v) } }
+      }
+    }
+  });
+}
+
+function renderOfChart(handle, ofLogs) {
+  const canvasId = `ofChart-${handle}`;
+  const canvas = document.getElementById(canvasId);
+  if (!canvas || ofLogs.length < 2) return;
+  const state = profileState[handle];
+  if (state.charts.of) state.charts.of.destroy();
+  const labels = ofLogs.map(l => {
+    const d = new Date(l.date);
+    return String(d.getDate()).padStart(2,'0') + '.' + String(d.getMonth()+1).padStart(2,'0') + '.';
+  });
+  const data = ofLogs.map(l => l.followers);
+  state.charts.of = new Chart(canvas, {
+    type: 'line',
+    data: { labels, datasets: [{ data, borderColor: '#fcb045', backgroundColor: 'rgba(252,176,69,0.12)', fill: true, tension: 0.4, borderWidth: 2, pointRadius: 4, pointBackgroundColor: '#fcb045' }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ' ' + ctx.raw + ' subs' } } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#7070a0', font: { size: 11 } } },
+        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#7070a0', font: { size: 11 } }, beginAtZero: false }
       }
     }
   });
@@ -1461,8 +1492,9 @@ async function saveOfSubs() {
   const subs = parseInt(document.getElementById('ofSubs').value);
   if (!date || isNaN(subs)) { toast('Vyplň datum a počet subs', true); return; }
   btn.disabled = true; btn.textContent = 'Ukládám…';
+  const ofHandle = PROFILES.find(p=>p.handle===_ofModalHandle)?.ofHandle || 'of_'+_ofModalHandle;
   const { error } = await sb.from('logs').upsert(
-    { date, profile: 'of_' + _ofModalHandle, followers: subs, note: 'OF manual' },
+    { date, profile: ofHandle, followers: subs, note: 'OF manual' },
     { onConflict: 'date,profile' }
   );
   btn.disabled = false; btn.textContent = 'Uložit';
