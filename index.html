@@ -938,8 +938,29 @@ function renderDetail(handle) {
       const prevOf = ofLogs.length >= 2 ? ofLogs[ofLogs.length - 2] : null;
       const ofDelta = (lastOf && prevOf) ? lastOf.followers - prevOf.followers : null;
       const ofDeltaHtml = ofDelta !== null
-        ? `<span class="${ofDelta>0?'delta-pos':ofDelta<0?'delta-neg':'delta-neu'}">${ofDelta>0?'▲':'▼'} ${ofDelta>0?'+':''}${fmt(ofDelta)} vs. předchozí</span>`
+        ? `<span class="${ofDelta>0?'delta-pos':ofDelta<0?'delta-neg':'delta-neu'}">${ofDelta>0?'▲':'▼'} ${ofDelta>0?'+':''}${ofDelta} vs. předchozí záznam</span>`
         : '';
+
+      // Průměr subs/den: (poslední - první) / počet dní
+      let avgPerDay = null;
+      if (ofLogs.length >= 2) {
+        const first = ofLogs[0];
+        const last  = ofLogs[ofLogs.length - 1];
+        const days  = (new Date(last.date) - new Date(first.date)) / 86400000;
+        if (days > 0) avgPerDay = ((last.followers - first.followers) / days).toFixed(1);
+      }
+
+      // Mini historie — posledních 6 záznamů
+      const histHtml = ofLogs.length
+        ? [...ofLogs].reverse().slice(0, 6).map(l => {
+            const d = new Date(l.date).toLocaleDateString('cs-CZ', {day:'2-digit',month:'2-digit'});
+            return `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:13px">
+              <span style="color:var(--muted)">${d}</span>
+              <span style="font-weight:700">${fmt(l.followers)}</span>
+            </div>`;
+          }).join('')
+        : '<div style="color:var(--muted);font-size:13px;padding:8px 0">Žádné záznamy</div>';
+
       return `
       <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
         <div class="card">
@@ -961,9 +982,13 @@ function renderDetail(handle) {
           <div class="card-icon" style="background:rgba(252,176,69,0.12)">💎</div>
           <div class="card-label">OnlyFans Subs</div>
           <div class="card-value">${lastOf ? fmt(lastOf.followers) : '—'}</div>
-          ${lastOf ? `<div style="font-size:11px;color:var(--muted);margin-top:4px">ke dni ${lastOf.date}</div>` : '<div style="font-size:11px;color:var(--muted);margin-top:4px">zatím žádná data</div>'}
-          <div class="card-delta">${ofDeltaHtml}</div>
-          <button class="btn-sm" style="margin-top:14px;width:100%" onclick="openOfModal('${handle}')">+ Přidat subs</button>
+          ${lastOf ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">ke dni ${lastOf.date}</div>` : ''}
+          ${avgPerDay !== null ? `<div style="margin-top:8px"><span style="font-size:18px;font-weight:800;color:var(--green)">+${avgPerDay}</span><span style="font-size:11px;color:var(--muted);margin-left:4px">subs / den průměr</span></div>` : ''}
+          <div class="card-delta" style="margin-top:4px">${ofDeltaHtml}</div>
+          <div style="height:1px;background:var(--border);margin:12px 0"></div>
+          <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px">HISTORIE</div>
+          ${histHtml}
+          <button class="btn-sm" style="margin-top:12px;width:100%" onclick="openOfModal('${handle}')">+ Přidat záznam</button>
         </div>
       </div>`;
     })()}
