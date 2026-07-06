@@ -785,9 +785,12 @@ function renderDetail(handle) {
   const tc = reels.reduce((s,r) => s + (r.comments||0), 0);
 
   // Daily growth
-  const dailyDiff = (curr, prev) => {
+  // allowNeg=false: views/likes/comments – záporná delta = smazaný reel, ne skutečný pokles → zobrazit "—"
+  // allowNeg=true:  sledující – mohou skutečně klesat
+  const dailyDiff = (curr, prev, allowNeg = false) => {
     if (curr != null && prev != null) {
       const d = curr - prev;
+      if (d < 0 && !allowNeg) return `<span style="color:var(--muted)">—</span>`;
       const sign = d > 0 ? '+' : '';
       const col = d > 0 ? 'var(--green)' : d < 0 ? 'var(--red)' : 'var(--muted)';
       return `<span style="color:${col}">${sign}${fmt(d)}</span>`;
@@ -803,10 +806,10 @@ function renderDetail(handle) {
     if (sorted.length >= 2) {
       const yestLog = sorted[sorted.length - 2];
       dailyHtml = `
-        <div><div style="font-size:28px;font-weight:800;letter-spacing:-1px">${dailyDiff(todayLog.total_views, yestLog.total_views)}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">views dnes</div></div>
-        <div><div style="font-size:28px;font-weight:800;letter-spacing:-1px">${dailyDiff(todayLog.total_likes, yestLog.total_likes)}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">likes dnes</div></div>
-        <div><div style="font-size:28px;font-weight:800;letter-spacing:-1px">${dailyDiff(todayLog.total_comments, yestLog.total_comments)}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">komentáře dnes</div></div>
-        <div><div style="font-size:28px;font-weight:800;letter-spacing:-1px">${dailyDiff(todayLog.followers, yestLog.followers)}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">sledující dnes</div></div>
+        <div><div style="font-size:28px;font-weight:800;letter-spacing:-1px">${dailyDiff(todayLog.total_views, yestLog.total_views, false)}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">views dnes</div></div>
+        <div><div style="font-size:28px;font-weight:800;letter-spacing:-1px">${dailyDiff(todayLog.total_likes, yestLog.total_likes, false)}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">likes dnes</div></div>
+        <div><div style="font-size:28px;font-weight:800;letter-spacing:-1px">${dailyDiff(todayLog.total_comments, yestLog.total_comments, false)}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">komentáře dnes</div></div>
+        <div><div style="font-size:28px;font-weight:800;letter-spacing:-1px">${dailyDiff(todayLog.followers, yestLog.followers, true)}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">sledující dnes</div></div>
       `;
       dailySubtitle = `vs. ${yestLog.date}`;
     } else {
