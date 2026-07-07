@@ -92,6 +92,20 @@
   }
   .profile-detail-panel.open { display: block; }
 
+  /* Girl panel header */
+  .girl-panel-header {
+    display: flex; align-items: center; gap: 12px;
+    padding-bottom: 16px; margin-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .girl-panel-header-title { font-size: 18px; font-weight: 700; }
+  .girl-back-btn {
+    background: var(--bg3); border: 1px solid var(--border); color: var(--muted);
+    padding: 6px 14px; border-radius: 10px; cursor: pointer; font-size: 13px;
+    transition: all 0.15s;
+  }
+  .girl-back-btn:hover { border-color: var(--accent); color: var(--text); }
+
   /* LOADING STATE INSIDE DETAIL */
   .detail-loading { text-align: center; padding: 40px; color: var(--muted); }
 
@@ -414,8 +428,15 @@
 </div>
 
 <div class="profiles-list">
-  <div class="profiles-grid" id="profilesGrid"></div>
-  <div class="profile-detail-panel" id="profileDetailPanel"></div>
+  <div class="profiles-grid" id="girlsGrid"></div>
+  <div id="girlProfilesPanel" style="display:none;margin-top:16px">
+    <div class="girl-panel-header">
+      <button class="girl-back-btn" onclick="closeGirl()">← Zpět</button>
+      <span class="girl-panel-header-title" id="girlPanelTitle"></span>
+    </div>
+    <div class="profiles-grid" id="profilesGrid"></div>
+    <div class="profile-detail-panel" id="profileDetailPanel"></div>
+  </div>
 </div>
 
 </div><!-- /appContent -->
@@ -477,12 +498,44 @@ const SB_URL = 'https://tolfunyrkqvjoscepkzw.supabase.co';
 const SB_KEY = 'sb_publishable_g4_Zrm9SJSFZICzBao-AmA_hfcMxftQ';
 const sb = window.supabase.createClient(SB_URL, SB_KEY);
 
-// ── PROFILES CONFIG ───────────────────────────────────────────────────
-const PROFILES = [
-  { handle: 'stelinkax',    label: 'Stela',    emoji: '⭐', ofHandle: 'of_stela'  },
-  { handle: 'laurriii.x',  label: 'Lauri #1', emoji: '💫', ofHandle: 'of_laura'  },
-  { handle: '_laurinkaa2_', label: 'Lauri #2', emoji: '🌸', ofHandle: 'of_laura'  },
+// ── GIRLS + PROFILES CONFIG ───────────────────────────────────────────
+const GIRLS = [
+  { name: 'Laura',    emoji: '💫', profiles: [
+    { handle: 'laurriii.x',   label: 'Lauri #1', emoji: '💫', ofHandle: 'of_laura' },
+    { handle: '_laurinkaa2_', label: 'Lauri #2', emoji: '🌸', ofHandle: 'of_laura' },
+  ]},
+  { name: 'Stela',    emoji: '⭐', profiles: [
+    { handle: 'stelinkax', label: 'Stela', emoji: '⭐', ofHandle: 'of_stela' },
+  ]},
+  { name: 'Viky',     emoji: '💜', profiles: [
+    { handle: 'vikynk.aa_',     label: 'Viky #1', emoji: '💜', ofHandle: null },
+    { handle: 'vikky.konecnaa', label: 'Viky #2', emoji: '💜', ofHandle: null },
+  ]},
+  { name: 'Terez',    emoji: '🌹', profiles: [
+    { handle: 'secretterka_1', label: 'Terez #1', emoji: '🌹', ofHandle: null },
+    { handle: 'terezkaax.x',   label: 'Terez #2', emoji: '🌹', ofHandle: null },
+    { handle: 'ter.x.ka',      label: 'Terez #3', emoji: '🌹', ofHandle: null },
+  ]},
+  { name: 'Elena',    emoji: '🔥', profiles: [
+    { handle: 'ta_elena3',  label: 'Elena #1', emoji: '🔥', ofHandle: null },
+    { handle: 'elenaa.x8', label: 'Elena #2', emoji: '🔥', ofHandle: null },
+  ]},
+  { name: 'Dominika', emoji: '💎', profiles: [
+    { handle: 'dominickaa_18', label: 'Dominika #1', emoji: '💎', ofHandle: null },
+    { handle: 'domcaaa_xx',    label: 'Dominika #2', emoji: '💎', ofHandle: null },
+  ]},
+  { name: 'Nela',     emoji: '🌸', profiles: [
+    { handle: 'nela.bby8', label: 'Nela', emoji: '🌸', ofHandle: null },
+  ]},
+  { name: 'Veru',     emoji: '🎧', profiles: [
+    { handle: 'djveronicafoxova', label: 'Veru', emoji: '🎧', ofHandle: null },
+  ]},
+  { name: 'Sofi',     emoji: '🦋', profiles: [
+    { handle: 'sofmxqq', label: 'Sofi', emoji: '🦋', ofHandle: null },
+  ]},
 ];
+// Flat list for backward compat (all existing logic unchanged)
+const PROFILES = GIRLS.flatMap(g => g.profiles.map(p => ({ ...p, girl: g.name })));
 
 // ── STATE ──────────────────────────────────────────────────────────────
 // Per-profile state, keyed by handle
@@ -490,6 +543,9 @@ const profileState = {};
 PROFILES.forEach(p => {
   profileState[p.handle] = { logs: [], reels: [], plan: {}, loaded: false, charts: {} };
 });
+
+let _allSummaries = [];   // cached from loadAllSummaries
+let activeGirl    = null; // currently expanded girl
 
 // Global modal context
 let _modalHandle = '';
@@ -587,21 +643,91 @@ function calcStreak(logs) {
 }
 
 // ── RENDER MAIN PROFILES LIST ─────────────────────────────────────────
-function renderProfilesList(summaries) {
+// ── RENDER GIRLS (main page) ──────────────────────────────────────────
+function renderProfilesList(summaries) { renderGirlsList(summaries); } // compat alias
+
+function renderGirlsList(summaries) {
+  _allSummaries = summaries;
+  const grid = document.getElementById('girlsGrid');
+  grid.innerHTML = '';
+
+  GIRLS.forEach(g => {
+    const girlSums = g.profiles.map(p => summaries.find(s => s.handle === p.handle) || { logs: [], reels: [] });
+    const prev7cut = new Date(); prev7cut.setDate(prev7cut.getDate() - 7);
+
+    // Combined followers
+    let totalFollowers = 0;
+    let totalFollowers7 = 0;
+    let hasFollowers = false, has7 = false;
+    girlSums.forEach(s => {
+      const sl = [...s.logs].sort((a,b) => a.date.localeCompare(b.date));
+      const last = sl[sl.length - 1];
+      if (last?.followers) { totalFollowers += last.followers; hasFollowers = true; }
+      const base7 = [...sl].reverse().find(l => new Date(l.date) <= prev7cut);
+      if (base7?.followers) { totalFollowers7 += base7.followers; has7 = true; }
+    });
+
+    let growthBadge = '';
+    if (hasFollowers && has7 && totalFollowers7 > 0) {
+      const pct = ((totalFollowers - totalFollowers7) / totalFollowers7 * 100);
+      const cls = pct >= 0 ? '' : ' neg';
+      const sign = pct >= 0 ? '+' : '';
+      growthBadge = `<div class="growth-badge${cls}">${sign}${pct.toFixed(1)}%</div>`;
+    }
+
+    // Combined avg views
+    const allReels = girlSums.flatMap(s => s.reels);
+    const avgViews = allReels.length
+      ? Math.round(allReels.reduce((s,r) => s + (r.views||0), 0) / allReels.length)
+      : null;
+
+    const profileLabel = g.profiles.length === 1 ? '1 profil' : `${g.profiles.length} profily`;
+
+    const card = document.createElement('div');
+    card.className = 'profile-card';
+    card.id = 'girl-' + g.name;
+    card.onclick = () => toggleGirl(g.name);
+    card.innerHTML = `
+      <div class="profile-emoji">${g.emoji}</div>
+      <div>
+        <div class="profile-handle" style="font-size:17px">${g.name}</div>
+        <div class="profile-label">${profileLabel}</div>
+      </div>
+      <div class="profile-stats">
+        <div class="pstat">
+          <div class="pstat-val">${hasFollowers ? fmt(totalFollowers) : '—'}</div>
+          <div class="pstat-label">Sledující</div>
+        </div>
+        <div class="pstat">
+          <div class="pstat-val">${avgViews !== null ? fmt(avgViews) : '—'}</div>
+          <div class="pstat-label">Ø Views</div>
+        </div>
+      </div>
+      ${growthBadge}
+    `;
+    grid.appendChild(card);
+  });
+}
+
+// ── RENDER PROFILE CARDS FOR A GIRL ──────────────────────────────────
+function renderProfilesForGirl(girlName) {
+  const girl = GIRLS.find(g => g.name === girlName);
+  if (!girl) return;
   const grid = document.getElementById('profilesGrid');
   grid.innerHTML = '';
-  PROFILES.forEach((p) => {
-    const sum = summaries.find(s => s.handle === p.handle) || { logs: [], reels: [] };
+  const prev7cut = new Date(); prev7cut.setDate(prev7cut.getDate() - 7);
+
+  girl.profiles.forEach(p => {
+    const sum = _allSummaries.find(s => s.handle === p.handle) || { logs: [], reels: [] };
     const sortedLogs = [...sum.logs].sort((a,b) => a.date.localeCompare(b.date));
     const last = sortedLogs[sortedLogs.length - 1];
-    const prev7cut = new Date(); prev7cut.setDate(prev7cut.getDate() - 7);
     const base7 = [...sortedLogs].reverse().find(l => new Date(l.date) <= prev7cut);
     let growthBadge = '';
     if (last && base7 && base7.followers > 0) {
       const pct = ((last.followers - base7.followers) / base7.followers * 100);
       const cls = pct >= 0 ? '' : ' neg';
       const sign = pct >= 0 ? '+' : '';
-      growthBadge = `<div class="growth-badge${cls}" data-tip="Sledující: ${base7.followers.toLocaleString('cs')} → ${last.followers.toLocaleString('cs')}">${sign}${pct.toFixed(1)}%</div>`;
+      growthBadge = `<div class="growth-badge${cls}">${sign}${pct.toFixed(1)}%</div>`;
     }
     const avgViews = sum.reels.length
       ? Math.round(sum.reels.reduce((s,r) => s + (r.views||0), 0) / sum.reels.length)
@@ -632,6 +758,36 @@ function renderProfilesList(summaries) {
     grid.appendChild(card);
   });
 }
+
+// ── TOGGLE GIRL ───────────────────────────────────────────────────────
+function toggleGirl(girlName) {
+  const panel     = document.getElementById('girlProfilesPanel');
+  const detPanel  = document.getElementById('profileDetailPanel');
+  const title     = document.getElementById('girlPanelTitle');
+
+  if (activeGirl === girlName) {
+    // Same girl → close
+    activeGirl = null; activeHandle = null;
+    document.querySelectorAll('#girlsGrid .profile-card').forEach(c => c.classList.remove('active'));
+    panel.style.display = 'none';
+    document.getElementById('profilesGrid').innerHTML = '';
+    detPanel.classList.remove('open'); detPanel.innerHTML = '';
+    return;
+  }
+
+  // Switch girl
+  activeGirl = girlName; activeHandle = null;
+  document.querySelectorAll('#girlsGrid .profile-card').forEach(c => c.classList.remove('active'));
+  document.getElementById('girl-' + girlName)?.classList.add('active');
+  detPanel.classList.remove('open'); detPanel.innerHTML = '';
+
+  const girl = GIRLS.find(g => g.name === girlName);
+  title.textContent = (girl?.emoji || '') + '  ' + girlName;
+  panel.style.display = 'block';
+  renderProfilesForGirl(girlName);
+}
+
+function closeGirl() { if (activeGirl) toggleGirl(activeGirl); }
 
 // ── TOGGLE ACCORDION ──────────────────────────────────────────────────
 let activeHandle = null;
