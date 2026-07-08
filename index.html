@@ -92,6 +92,25 @@
   }
   .profile-detail-panel.open { display: block; }
 
+  /* Girl full-screen overlay – vyskočí jako nová stránka */
+  #girlProfilesPanel {
+    display: none;
+    position: fixed; inset: 0;
+    background: var(--bg);
+    z-index: 150;
+    overflow-y: auto;
+    padding: 24px;
+  }
+  #girlProfilesPanel.open {
+    display: block;
+    animation: girlPanelIn 0.2s ease;
+  }
+  @keyframes girlPanelIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  body.girl-open { overflow: hidden; }
+
   /* Girl panel header */
   .girl-panel-header {
     display: flex; align-items: center; gap: 12px;
@@ -428,7 +447,7 @@
 
 <div class="profiles-list">
   <div class="profiles-grid" id="girlsGrid"></div>
-  <div id="girlProfilesPanel" style="display:none;margin-top:16px">
+  <div id="girlProfilesPanel">
     <div class="girl-panel-header">
       <button class="girl-back-btn" onclick="closeGirl()">← Zpět</button>
       <span class="girl-panel-header-title" id="girlPanelTitle"></span>
@@ -767,7 +786,8 @@ function toggleGirl(girlName) {
     // Same girl → close
     activeGirl = null; activeHandle = null;
     document.querySelectorAll('#girlsGrid .profile-card').forEach(c => c.classList.remove('active'));
-    panel.style.display = 'none';
+    panel.classList.remove('open');
+    document.body.classList.remove('girl-open');
     document.getElementById('profilesGrid').innerHTML = '';
     detPanel.classList.remove('open'); detPanel.innerHTML = '';
     return;
@@ -781,11 +801,15 @@ function toggleGirl(girlName) {
 
   const girl = GIRLS.find(g => g.name === girlName);
   title.textContent = (girl?.emoji || '') + '  ' + girlName;
-  panel.style.display = 'block';
+  panel.classList.add('open');
+  document.body.classList.add('girl-open');
+  panel.scrollTop = 0;
   renderProfilesForGirl(girlName);
 }
 
 function closeGirl() { if (activeGirl) toggleGirl(activeGirl); }
+
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && activeGirl) closeGirl(); });
 
 // ── TOGGLE ACCORDION ──────────────────────────────────────────────────
 let activeHandle = null;
