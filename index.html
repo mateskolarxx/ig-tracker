@@ -59,6 +59,12 @@
   }
   @media (max-width: 700px) { .profiles-grid { grid-template-columns: 1fr; } }
 
+  /* Profily holky – centrované, ne roztažené na 3 sloupce */
+  #profilesGrid {
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 16px;
+  }
+  #profilesGrid .profile-card { flex: 0 1 320px; }
+
   .profile-card {
     background: var(--bg2); border: 2px solid var(--border);
     border-radius: 20px; padding: 24px 20px; cursor: pointer;
