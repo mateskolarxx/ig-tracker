@@ -666,6 +666,18 @@ function calcStreak(logs) {
   return n;
 }
 
+// ── GROWTH BASELINE (7d, s fallbackem na nejstarší záznam) ────────────
+// Pokud ještě nemáme 7 dní historie (nová holka), použij nejstarší dostupný
+// záznam jako baseline, ať se growth badge zobrazí i dřív než za 7 dní.
+function growthBaseline(sortedLogs, refDate) {
+  if (!sortedLogs.length) return { log: null, approx: false };
+  const cutoff = new Date(refDate); cutoff.setDate(cutoff.getDate() - 7);
+  const exact = [...sortedLogs].reverse().find(l => new Date(l.date) <= cutoff);
+  if (exact) return { log: exact, approx: false };
+  if (sortedLogs.length > 1) return { log: sortedLogs[0], approx: true };
+  return { log: null, approx: false };
+}
+
 // ── RENDER MAIN PROFILES LIST ─────────────────────────────────────────
 // ── RENDER GIRLS (main page) ──────────────────────────────────────────
 function renderProfilesList(summaries) { renderGirlsList(summaries); } // compat alias
@@ -677,26 +689,27 @@ function renderGirlsList(summaries) {
 
   GIRLS.forEach(g => {
     const girlSums = g.profiles.map(p => summaries.find(s => s.handle === p.handle) || { logs: [], reels: [] });
-    const prev7cut = new Date(); prev7cut.setDate(prev7cut.getDate() - 7);
+    const now = new Date();
 
     // Combined followers
     let totalFollowers = 0;
-    let totalFollowers7 = 0;
-    let hasFollowers = false, has7 = false;
+    let totalFollowersBase = 0;
+    let hasFollowers = false, hasBase = false, anyApprox = false;
     girlSums.forEach(s => {
       const sl = [...s.logs].sort((a,b) => a.date.localeCompare(b.date));
       const last = sl[sl.length - 1];
       if (last?.followers) { totalFollowers += last.followers; hasFollowers = true; }
-      const base7 = [...sl].reverse().find(l => new Date(l.date) <= prev7cut);
-      if (base7?.followers) { totalFollowers7 += base7.followers; has7 = true; }
+      const { log: base, approx } = growthBaseline(sl, now);
+      if (base?.followers) { totalFollowersBase += base.followers; hasBase = true; if (approx) anyApprox = true; }
     });
 
     let growthBadge = '';
-    if (hasFollowers && has7 && totalFollowers7 > 0) {
-      const pct = ((totalFollowers - totalFollowers7) / totalFollowers7 * 100);
+    if (hasFollowers && hasBase && totalFollowersBase > 0) {
+      const pct = ((totalFollowers - totalFollowersBase) / totalFollowersBase * 100);
       const cls = pct >= 0 ? '' : ' neg';
       const sign = pct >= 0 ? '+' : '';
-      growthBadge = `<div class="growth-badge${cls}">${sign}${pct.toFixed(1)}%</div>`;
+      const tip = anyApprox ? ' data-tip="Zatím méně než 7 dní dat – růst od začátku sledování"' : '';
+      growthBadge = `<div class="growth-badge${cls}"${tip}>${sign}${pct.toFixed(1)}%</div>`;
     }
 
     // Combined avg views
@@ -739,19 +752,19 @@ function renderProfilesForGirl(girlName) {
   if (!girl) return;
   const grid = document.getElementById('profilesGrid');
   grid.innerHTML = '';
-  const prev7cut = new Date(); prev7cut.setDate(prev7cut.getDate() - 7);
 
   girl.profiles.forEach(p => {
     const sum = _allSummaries.find(s => s.handle === p.handle) || { logs: [], reels: [] };
     const sortedLogs = [...sum.logs].sort((a,b) => a.date.localeCompare(b.date));
     const last = sortedLogs[sortedLogs.length - 1];
-    const base7 = [...sortedLogs].reverse().find(l => new Date(l.date) <= prev7cut);
+    const { log: base, approx } = growthBaseline(sortedLogs, new Date());
     let growthBadge = '';
-    if (last && base7 && base7.followers > 0) {
-      const pct = ((last.followers - base7.followers) / base7.followers * 100);
+    if (last && base && base.followers > 0) {
+      const pct = ((last.followers - base.followers) / base.followers * 100);
       const cls = pct >= 0 ? '' : ' neg';
       const sign = pct >= 0 ? '+' : '';
-      growthBadge = `<div class="growth-badge${cls}">${sign}${pct.toFixed(1)}%</div>`;
+      const tip = approx ? ' data-tip="Zatím méně než 7 dní dat – růst od začátku sledování"' : '';
+      growthBadge = `<div class="growth-badge${cls}"${tip}>${sign}${pct.toFixed(1)}%</div>`;
     }
     const avgViews = sum.reels.length
       ? Math.round(sum.reels.reduce((s,r) => s + (r.views||0), 0) / sum.reels.length)
@@ -874,16 +887,17 @@ function renderDetail(handle) {
     ? 'Sync: ' + new Date(last.date).toLocaleDateString('cs', { day: 'numeric', month: 'numeric', year: 'numeric' })
     : 'Žádná data';
 
-  // 7d growth badge
+  // 7d growth badge (fallback na nejstarší záznam, pokud ještě nemáme 7 dní dat)
   let g7Html = '';
   if (last) {
-    const cutoff = new Date(last.date);
-    cutoff.setDate(cutoff.getDate() - 7);
-    const base7 = [...sorted].reverse().find(l => new Date(l.date) <= cutoff);
+    const { log: base7, approx } = growthBaseline(sorted, last.date);
     if (base7 && base7.followers > 0 && last.followers > base7.followers) {
       const pct = ((last.followers - base7.followers) / base7.followers * 100).toFixed(1);
+      const tip = approx
+        ? `Zatím méně než 7 dní dat: ${base7.followers.toLocaleString('cs')} → ${last.followers.toLocaleString('cs')}`
+        : `Flws za 7 dní: ${base7.followers.toLocaleString('cs')} → ${last.followers.toLocaleString('cs')}`;
       g7Html = `<div style="background:rgba(34,197,94,0.15);color:#22c55e;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;width:fit-content;margin-top:4px;cursor:default"
-        data-tip="Flws za 7 dní: ${base7.followers.toLocaleString('cs')} → ${last.followers.toLocaleString('cs')}">+${pct}%</div>`;
+        data-tip="${tip}">+${pct}%</div>`;
     }
   }
 
@@ -1576,8 +1590,7 @@ async function clearPlanNote() {
 function updateSummaryCard(handle, sum) {
   const sortedLogs = [...sum.logs].sort((a,b) => a.date.localeCompare(b.date));
   const last = sortedLogs[sortedLogs.length - 1];
-  const prev7cut = new Date(); prev7cut.setDate(prev7cut.getDate() - 7);
-  const base7 = [...sortedLogs].reverse().find(l => new Date(l.date) <= prev7cut);
+  const { log: base7, approx } = growthBaseline(sortedLogs, new Date());
   // Re-render the full accordion summary (simpler: just reload)
   // For now we'll do a full re-render of the summary part
   const acc = document.getElementById('accordion-' + handle);
@@ -1590,7 +1603,9 @@ function updateSummaryCard(handle, sum) {
     const pct = ((last.followers - base7.followers) / base7.followers * 100);
     const cls = pct >= 0 ? '' : ' neg';
     const sign = pct >= 0 ? '+' : '';
-    growthBadge = `<div class="growth-badge${cls}" data-tip="Sledující: ${base7.followers.toLocaleString('cs')} → ${last.followers.toLocaleString('cs')}">${sign}${pct.toFixed(1)}% 7d</div>`;
+    const label = approx ? '' : ' 7d';
+    const tip = approx ? 'Zatím méně než 7 dní dat' : `Sledující: ${base7.followers.toLocaleString('cs')} → ${last.followers.toLocaleString('cs')}`;
+    growthBadge = `<div class="growth-badge${cls}" data-tip="${tip}">${sign}${pct.toFixed(1)}%${label}</div>`;
   }
   const avgViews = sum.reels.length
     ? Math.round(sum.reels.reduce((s,r) => s + (r.views||0), 0) / sum.reels.length)
