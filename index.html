@@ -307,82 +307,6 @@
   .toast.show { opacity: 1; transform: translateY(0); }
   .toast.err { border-color: var(--red); color: var(--red); }
 
-  /* LOGIN SCREEN */
-  #loginScreen {
-    position: fixed; inset: 0; z-index: 9999;
-    background: linear-gradient(145deg, #050508 0%, #0d0d18 40%, #1a0826 100%);
-    display: flex; align-items: center; justify-content: center;
-    transition: opacity 0.7s cubic-bezier(.4,0,.2,1), transform 0.7s cubic-bezier(.4,0,.2,1);
-  }
-  #loginScreen.hide { opacity: 0; transform: scale(1.06); pointer-events: none; }
-  .login-particles { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
-  .lp {
-    position: absolute; border-radius: 50%;
-    background: radial-gradient(circle, rgba(193,53,132,0.25) 0%, rgba(131,58,180,0.08) 50%, transparent 70%);
-    animation: lp-float linear infinite;
-  }
-  @keyframes lp-float {
-    0%   { transform: translateY(110vh) rotate(0deg); opacity: 0; }
-    8%   { opacity: 1; }
-    92%  { opacity: 0.6; }
-    100% { transform: translateY(-15vh) rotate(720deg); opacity: 0; }
-  }
-  .login-card {
-    position: relative; z-index: 1;
-    background: rgba(18,18,26,0.85); border: 1px solid rgba(193,53,132,0.25);
-    border-radius: 28px; padding: 44px 40px; width: 380px; max-width: 92vw;
-    backdrop-filter: blur(24px);
-    box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.06);
-    animation: card-in 0.6s cubic-bezier(.34,1.56,.64,1) both;
-  }
-  @keyframes card-in {
-    from { opacity: 0; transform: translateY(24px) scale(0.95); }
-    to   { opacity: 1; transform: translateY(0) scale(1); }
-  }
-  .login-logo { text-align: center; margin-bottom: 32px; }
-  .login-logo-icon {
-    width: 68px; height: 68px; margin: 0 auto 16px;
-    background: linear-gradient(135deg, var(--gold), var(--accent3), var(--accent), var(--accent2));
-    border-radius: 22px; display: flex; align-items: center; justify-content: center; font-size: 34px;
-    box-shadow: 0 12px 40px rgba(193,53,132,0.45), 0 0 0 1px rgba(255,255,255,0.08);
-  }
-  .login-logo h2 { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
-  .login-logo p { color: var(--muted); font-size: 13px; margin-top: 5px; }
-  .login-label { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: 0.6px; text-transform: uppercase; margin-bottom: 8px; }
-  .login-input {
-    width: 100%; padding: 14px 16px; background: rgba(10,10,20,0.7);
-    border: 1.5px solid var(--border); border-radius: 14px;
-    color: var(--text); font-size: 16px; outline: none; margin-bottom: 20px;
-    transition: border-color 0.2s, box-shadow 0.2s; letter-spacing: 2px;
-  }
-  .login-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(193,53,132,0.15); }
-  .login-input.shake { animation: login-shake 0.4s ease; border-color: var(--red); }
-  @keyframes login-shake {
-    0%,100% { transform: translateX(0); }
-    20% { transform: translateX(-10px); }
-    40% { transform: translateX(10px); }
-    60% { transform: translateX(-6px); }
-    80% { transform: translateX(6px); }
-  }
-  .login-btn {
-    width: 100%; padding: 15px; background: linear-gradient(135deg, var(--accent2), var(--accent));
-    border: none; border-radius: 14px; color: #fff; font-size: 15px; font-weight: 700;
-    cursor: pointer; position: relative; overflow: hidden;
-    transition: transform 0.2s, box-shadow 0.2s;
-    box-shadow: 0 8px 24px rgba(193,53,132,0.3);
-  }
-  .login-btn:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(193,53,132,0.45); }
-  .login-btn:active { transform: translateY(0); }
-  .login-btn .lb-text { transition: opacity 0.2s, transform 0.2s; }
-  .login-btn .lb-check {
-    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-    font-size: 22px; opacity: 0; transform: scale(0.3); transition: opacity 0.3s, transform 0.3s;
-  }
-  .login-btn.success { background: linear-gradient(135deg, #15803d, #22c55e); box-shadow: 0 8px 24px rgba(34,197,94,0.4); }
-  .login-btn.success .lb-text { opacity: 0; transform: scale(0.7); }
-  .login-btn.success .lb-check { opacity: 1; transform: scale(1); }
-  .login-error { color: var(--red); font-size: 13px; text-align: center; margin-top: 10px; height: 18px; transition: opacity 0.2s; }
-
   /* DETAIL HEADER */
   .detail-header {
     display: flex; align-items: center; gap: 12px;
@@ -400,25 +324,6 @@
 </style>
 </head>
 <body>
-
-<!-- LOGIN SCREEN -->
-<div id="loginScreen">
-  <div class="login-particles" id="loginParticles"></div>
-  <div class="login-card">
-    <div class="login-logo">
-      <div class="login-logo-icon">📸</div>
-      <h2 class="grad">IG Tracker</h2>
-      <p>Zadej heslo pro přístup</p>
-    </div>
-    <div class="login-label">Heslo</div>
-    <input type="password" id="loginInput" class="login-input" placeholder="••••••••••••" onkeydown="if(event.key==='Enter')doLogin()" autocomplete="current-password">
-    <button class="login-btn" id="loginBtn" onclick="doLogin()">
-      <span class="lb-text">Přihlásit se</span>
-      <span class="lb-check">✓</span>
-    </button>
-    <div class="login-error" id="loginError"></div>
-  </div>
-</div>
 
 <!-- OF SUBS MODAL -->
 <div class="modal-overlay" id="ofModal">
@@ -1711,44 +1616,6 @@ function exportCSV(handle) {
   });
 });
 
-// ── AUTH ──────────────────────────────────────────────────────────────
-const _AK = 'igt_auth_v1';
-const _PH = btoa('MourekMicka09');
-
-function spawnParticles() {
-  const c = document.getElementById('loginParticles');
-  for (let i = 0; i < 10; i++) {
-    const p = document.createElement('div');
-    p.className = 'lp';
-    const s = 100 + Math.random() * 280;
-    p.style.cssText = `width:${s}px;height:${s}px;left:${Math.random()*105-5}%;animation-duration:${10+Math.random()*16}s;animation-delay:${-Math.random()*26}s`;
-    c.appendChild(p);
-  }
-}
-
-function doLogin() {
-  const input = document.getElementById('loginInput');
-  const btn   = document.getElementById('loginBtn');
-  const err   = document.getElementById('loginError');
-  if (btoa(input.value) === _PH) {
-    localStorage.setItem(_AK, _PH);
-    btn.classList.add('success');
-    err.textContent = '';
-    setTimeout(() => {
-      const screen = document.getElementById('loginScreen');
-      screen.classList.add('hide');
-      setTimeout(() => { screen.style.display = 'none'; }, 700);
-    }, 650);
-  } else {
-    input.classList.remove('shake');
-    void input.offsetWidth; // reflow pro restart animace
-    input.classList.add('shake');
-    input.value = '';
-    err.textContent = 'Špatné heslo, zkus to znovu.';
-    setTimeout(() => { input.classList.remove('shake'); err.textContent = ''; }, 600);
-  }
-}
-
 // ── OF SUBS ───────────────────────────────────────────────────────────
 let _ofModalHandle = '';
 
@@ -1787,10 +1654,6 @@ async function saveOfSubs() {
 
 // ── INIT ─────────────────────────────────────────────────────────────
 (async function init() {
-  spawnParticles();
-  if (localStorage.getItem(_AK) === _PH) {
-    document.getElementById('loginScreen').style.display = 'none';
-  }
   try {
     const summaries = await loadAllSummaries();
     renderProfilesList(summaries);
