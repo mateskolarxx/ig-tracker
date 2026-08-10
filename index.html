@@ -339,6 +339,23 @@
   </div>
 </div>
 
+<!-- EDIT PASSWORD MODAL -->
+<div class="modal-overlay" id="editPwModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeEditPwModal()">✕</button>
+    <h2>🔒 Heslo pro úpravy</h2>
+    <div class="form-group">
+      <label>Heslo</label>
+      <input type="password" id="editPwInput" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')confirmEditPw()">
+    </div>
+    <div id="editPwError" style="color:var(--red);font-size:13px;margin-bottom:4px"></div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeEditPwModal()">Zrušit</button>
+      <button class="btn" onclick="confirmEditPw()">Potvrdit</button>
+    </div>
+  </div>
+</div>
+
 <!-- LOADING -->
 <div class="loading-overlay" id="loadingOverlay">
   <div class="spinner"></div>
@@ -966,7 +983,7 @@ function renderDetail(handle) {
     const dow  = DAYS_CZ[d.getDay()];
     const dd   = String(d.getDate()).padStart(2,'0') + '.' + String(d.getMonth()+1).padStart(2,'0') + '.';
     planHtml += `
-      <div class="plan-day ${i === 0 ? 'today' : ''} ${note ? 'has-note' : ''}" onclick="openPlanModal('${handle}','${key}','${dow} ${dd}')">
+      <div class="plan-day ${i === 0 ? 'today' : ''} ${note ? 'has-note' : ''}" onclick="requireEdit(() => openPlanModal('${handle}','${key}','${dow} ${dd}'))">
         <div class="plan-date-label">
           ${i === 0 ? '<div class="plan-date-today">DNES</div>' : ''}
           <div class="plan-date-day">${dd}</div>
@@ -990,7 +1007,7 @@ function renderDetail(handle) {
             <div class="reel-label">${r.description || 'reel'} · ❤️ ${fmt(r.likes||0)}</div>
           </div>
           <a class="reel-link" href="${r.url}" target="_blank">↗</a>
-          <button onclick="deleteReel('${handle}','${r.id}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0 0 0 4px;">🗑</button>
+          <button onclick="requireEdit(() => deleteReel('${handle}','${r.id}'))" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0 0 0 4px;">🗑</button>
         </div>`).join('')
     : '<div class="empty"><p>Žádné reely.</p></div>';
 
@@ -1014,7 +1031,7 @@ function renderDetail(handle) {
         <td><strong>${fmt(log.followers)}</strong></td>
         <td>${dFH}</td>
         <td style="color:var(--muted);font-size:12px">${log.note||''}</td>
-        <td><button onclick="deleteLog('${handle}','${log.id}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;">🗑</button></td>
+        <td><button onclick="requireEdit(() => deleteLog('${handle}','${log.id}'))" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;">🗑</button></td>
       </tr>`;
     });
     tableHtml += '</tbody></table>';
@@ -1032,7 +1049,7 @@ function renderDetail(handle) {
       </div>
       <div class="detail-actions">
         <button class="btn-ghost" onclick="exportCSV('${handle}')" style="font-size:12px;padding:6px 12px;">⬇ Export CSV</button>
-        <button class="btn" onclick="openLogModal('${handle}')">+ Přidat záznam</button>
+        <button class="btn" onclick="requireEdit(() => openLogModal('${handle}'))">+ Přidat záznam</button>
       </div>
     </div>
 
@@ -1157,7 +1174,7 @@ function renderDetail(handle) {
           <div style="height:1px;background:var(--border);margin:12px 0"></div>
           <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px">POSLEDNÍCH 6 DNÍ</div>
           ${histHtml}
-          <button class="btn-sm" style="margin-top:12px;width:100%" onclick="openOfModal('${handle}')">+ Přidat den</button>
+          <button class="btn-sm" style="margin-top:12px;width:100%" onclick="requireEdit(() => openOfModal('${handle}'))">+ Přidat den</button>
         </div>
       </div>
       ${ofLogs.length >= 2 ? `
@@ -1238,7 +1255,7 @@ function renderDetail(handle) {
       <div class="section-card">
         <div class="section-header">
           <div class="section-title">🎥 Posledních 5 reelů</div>
-          <button class="btn-sm" onclick="openReelModal('${handle}')">+ Přidat</button>
+          <button class="btn-sm" onclick="requireEdit(() => openReelModal('${handle}'))">+ Přidat</button>
         </div>
         <div>${reelsListHtml}</div>
       </div>
@@ -1494,7 +1511,7 @@ async function savePlanNote() {
     const dow  = DAYS_CZ[d.getDay()];
     const dd   = String(d.getDate()).padStart(2,'0') + '.' + String(d.getMonth()+1).padStart(2,'0') + '.';
     planHtml += `
-      <div class="plan-day ${i === 0 ? 'today' : ''} ${note2 ? 'has-note' : ''}" onclick="openPlanModal('${handle}','${key}','${dow} ${dd}')">
+      <div class="plan-day ${i === 0 ? 'today' : ''} ${note2 ? 'has-note' : ''}" onclick="requireEdit(() => openPlanModal('${handle}','${key}','${dow} ${dd}'))">
         <div class="plan-date-label">
           ${i === 0 ? '<div class="plan-date-today">DNES</div>' : ''}
           <div class="plan-date-day">${dd}</div>
@@ -1533,7 +1550,7 @@ async function clearPlanNote() {
     const dow  = DAYS_CZ[d.getDay()];
     const dd   = String(d.getDate()).padStart(2,'0') + '.' + String(d.getMonth()+1).padStart(2,'0') + '.';
     planHtml += `
-      <div class="plan-day ${i === 0 ? 'today' : ''} ${note2 ? 'has-note' : ''}" onclick="openPlanModal('${handle}','${key}','${dow} ${dd}')">
+      <div class="plan-day ${i === 0 ? 'today' : ''} ${note2 ? 'has-note' : ''}" onclick="requireEdit(() => openPlanModal('${handle}','${key}','${dow} ${dd}'))">
         <div class="plan-date-label">
           ${i === 0 ? '<div class="plan-date-today">DNES</div>' : ''}
           <div class="plan-date-day">${dd}</div>
@@ -1610,11 +1627,48 @@ function exportCSV(handle) {
 }
 
 // ── CLOSE ON OVERLAY CLICK ────────────────────────────────────────────
-['logModal','reelModal','planModal'].forEach(id => {
+['logModal','reelModal','planModal','editPwModal'].forEach(id => {
   document.getElementById(id).addEventListener('click', e => {
     if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
   });
 });
+
+// ── EDIT LOCK ─────────────────────────────────────────────────────────
+// Dashboard je veřejně čitelný pro kohokoliv. Úpravy (přidat/smazat/upravit)
+// jsou zamčené za heslem – jednou zadané heslo se pak pamatuje v tomto prohlížeči.
+const _EK  = 'igt_edit_v1';
+const _EPH = btoa('matejkolar2003');
+let _editUnlocked = localStorage.getItem(_EK) === _EPH;
+let _pendingEditAction = null;
+
+function requireEdit(action) {
+  if (_editUnlocked) { action(); return; }
+  _pendingEditAction = action;
+  document.getElementById('editPwInput').value = '';
+  document.getElementById('editPwError').textContent = '';
+  document.getElementById('editPwModal').classList.add('open');
+  setTimeout(() => document.getElementById('editPwInput').focus(), 100);
+}
+function closeEditPwModal() {
+  document.getElementById('editPwModal').classList.remove('open');
+  _pendingEditAction = null;
+}
+function confirmEditPw() {
+  const input = document.getElementById('editPwInput');
+  const err   = document.getElementById('editPwError');
+  if (btoa(input.value) === _EPH) {
+    _editUnlocked = true;
+    localStorage.setItem(_EK, _EPH);
+    document.getElementById('editPwModal').classList.remove('open');
+    toast('Úpravy odemčeny ✓');
+    const action = _pendingEditAction; _pendingEditAction = null;
+    if (action) action();
+  } else {
+    err.textContent = 'Špatné heslo, zkus to znovu.';
+    input.value = '';
+    input.focus();
+  }
+}
 
 // ── OF SUBS ───────────────────────────────────────────────────────────
 let _ofModalHandle = '';
