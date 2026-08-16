@@ -521,11 +521,13 @@ function deltaHtml(val) {
 }
 
 // ── OF FAKTURAČNÍ CYKLUS (16. – 16.) ────────────────────────────────────
-// "Měsíc" pro OF subs běží od 16. dne do 15. dne následujícího měsíce.
+// "Měsíc" pro OF subs běží od 16. dne do 16. dne následujícího měsíce.
+// Přechod na nový cyklus nastává až ráno 17. – celý 16. den ještě patří
+// do končícího cyklu (ten den ještě neskončil).
 function ofCycleStart(dateStr) {
   const d = new Date(dateStr);
   const start = new Date(d.getFullYear(), d.getMonth(), 16);
-  if (d.getDate() < 16) start.setMonth(start.getMonth() - 1);
+  if (d.getDate() < 17) start.setMonth(start.getMonth() - 1);
   return start;
 }
 function ofCycleKey(dateStr) {
