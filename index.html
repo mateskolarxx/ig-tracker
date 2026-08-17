@@ -1113,6 +1113,10 @@ function renderDetail(handle) {
       const cycleTotal = currentCycle ? currentCycle.logs.reduce((s, l) => s + (l.followers || 0), 0) : 0;
       const avgPerDay = currentCycle && currentCycle.logs.length ? (cycleTotal / currentCycle.logs.length).toFixed(1) : null;
 
+      // Nejnovější cyklus s daty (aktuální, nebo poslední uzavřený pokud aktuální ještě nemá záznamy)
+      const latestCycle = ofCycleList.length ? ofCycleList[0] : null;
+      const latestAvg = latestCycle ? (latestCycle.logs.reduce((s, l) => s + (l.followers || 0), 0) / latestCycle.logs.length).toFixed(1) : null;
+
       const cycleHistoryHtml = ofCycleList.length
         ? ofCycleList.slice(0, 8).map(c => {
             const total = c.logs.reduce((s, l) => s + (l.followers || 0), 0);
@@ -1164,21 +1168,19 @@ function renderDetail(handle) {
           <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px">${fmt(tc)}</div>
           <div style="font-size:11px;color:var(--muted);margin-top:4px">celkové komentáře</div>
         </div>
-        <div class="card">
+        <div class="card" style="position:relative">
           <div class="card-icon" style="background:rgba(252,176,69,0.12)">💎</div>
+          ${latestCycle ? `<div style="position:absolute;top:20px;right:20px;text-align:right">
+            <div style="font-size:10px;color:var(--muted);margin-bottom:2px">${latestCycle.label}${latestCycle.key === currentCycleKey ? ' (aktuální)' : ''}</div>
+            <div style="font-size:18px;font-weight:800;color:var(--green)">+${latestAvg}/den</div>
+          </div>` : ''}
           <div class="card-label">OnlyFans Subs</div>
           <div class="card-value">${fmt(totalSubs)}</div>
           <div style="font-size:11px;color:var(--muted);margin-top:2px">celkem za sledované období</div>
-          ${avgPerDay ? `
-          <div style="margin-top:10px;display:flex;gap:16px">
-            <div>
-              <div style="font-size:20px;font-weight:800;color:var(--green)">+${avgPerDay}</div>
-              <div style="font-size:10px;color:var(--muted)">průměr / den (${currentCycle.label})</div>
-            </div>
-            ${maxDay ? `<div>
-              <div style="font-size:20px;font-weight:800;color:var(--gold)">+${maxDay.followers}</div>
-              <div style="font-size:10px;color:var(--muted)">max. den</div>
-            </div>` : ''}
+          ${maxDay ? `
+          <div style="margin-top:10px">
+            <div style="font-size:20px;font-weight:800;color:var(--gold)">+${maxDay.followers}</div>
+            <div style="font-size:10px;color:var(--muted)">max. den</div>
           </div>` : ''}
           <div style="height:1px;background:var(--border);margin:12px 0"></div>
           <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px">POSLEDNÍCH 6 DNÍ</div>
