@@ -447,6 +447,9 @@ const sb = window.supabase.createClient(SB_URL, SB_KEY);
 
 // ── GIRLS + PROFILES CONFIG ───────────────────────────────────────────
 const GIRLS = [
+  { name: 'Lily',     emoji: '🌷', profiles: [
+    { handle: 'lilyy_ofcx', label: 'Lily', emoji: '🌷', ofHandle: 'of_lily' },
+  ]},
   { name: 'Laura',    emoji: '💫', profiles: [
     { handle: 'laurriii.x',   label: 'Lauri #1', emoji: '💫', ofHandle: 'of_laura' },
     { handle: '_laurinkaa2_', label: 'Lauri #2', emoji: '🌸', ofHandle: 'of_laura' },
@@ -483,9 +486,6 @@ const GIRLS = [
   ]},
   { name: 'Danča',    emoji: '🍒', profiles: [
     { handle: 'danixskaa2_', label: 'Danča', emoji: '🍒', ofHandle: null },
-  ]},
-  { name: 'Lily',     emoji: '🌷', profiles: [
-    { handle: 'lilyy_ofcx', label: 'Lily', emoji: '🌷', ofHandle: 'of_lily' },
   ]},
 ];
 // Flat list for backward compat (all existing logic unchanged)
@@ -1118,9 +1118,16 @@ function renderDetail(handle) {
             const total = c.logs.reduce((s, l) => s + (l.followers || 0), 0);
             const avg = (total / c.logs.length).toFixed(1);
             const isCurrent = c.key === currentCycleKey;
+            // Průměrné views reelů vydaných ve stejném cyklu (16.–16.)
+            const cycleReels = (reels || []).filter(r => r.posted_at && ofCycleKey(r.posted_at) === c.key);
+            const avgViews = cycleReels.length
+              ? Math.round(cycleReels.reduce((s, r) => s + (r.views || 0), 0) / cycleReels.length)
+              : null;
             return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px">
               <span style="color:${isCurrent ? 'var(--text)' : 'var(--muted)'};font-weight:${isCurrent ? 700 : 400}">${c.label}${isCurrent ? ' (aktuální)' : ''}</span>
-              <span style="font-weight:700;color:var(--green)">+${avg}/den</span>
+              <span style="text-align:right">
+                <span style="font-weight:700;color:var(--green)">+${avg} subs/den</span>${avgViews !== null ? `<span style="color:var(--muted)"> · </span><span style="font-weight:700;color:var(--green)">Ø ${fmt(avgViews)} views</span>` : ''}
+              </span>
             </div>`;
           }).join('')
         : '';
