@@ -1131,25 +1131,35 @@ function renderDetail(handle) {
       const cycleTotal = currentCycle ? currentCycle.logs.reduce((s, l) => s + (l.followers || 0), 0) : 0;
       const avgPerDay = currentCycle && currentCycle.logs.length ? (cycleTotal / currentCycle.logs.length).toFixed(1) : null;
 
-      // Nejnovější cyklus s daty (aktuální, nebo poslední uzavřený pokud aktuální ještě nemá záznamy)
-      const latestCycle = ofCycleList.length ? ofCycleList[0] : null;
-      const latestAvg = latestCycle ? (latestCycle.logs.reduce((s, l) => s + (l.followers || 0), 0) / latestCycle.logs.length).toFixed(1) : null;
-
       const cycleHistoryHtml = ofCycleList.length
         ? ofCycleList.slice(0, 8).map(c => {
             const total = c.logs.reduce((s, l) => s + (l.followers || 0), 0);
             const avg = (total / c.logs.length).toFixed(1);
             const isCurrent = c.key === currentCycleKey;
-            // Průměrné views reelů vydaných ve stejném cyklu (16.–16.)
-            const cycleReels = (reels || []).filter(r => r.posted_at && ofCycleKey(r.posted_at) === c.key);
-            const avgViews = cycleReels.length
-              ? Math.round(cycleReels.reduce((s, r) => s + (r.views || 0), 0) / cycleReels.length)
-              : null;
             return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px">
               <span style="color:${isCurrent ? 'var(--text)' : 'var(--muted)'};font-weight:${isCurrent ? 700 : 400}">${c.label}${isCurrent ? ' (aktuální)' : ''}</span>
-              <span style="text-align:right">
-                <span style="font-weight:700;color:var(--green)">+${avg} subs/den</span>${avgViews !== null ? `<span style="color:var(--muted)"> · </span><span style="font-weight:700;color:var(--green)">Ø ${fmt(avgViews)} views</span>` : ''}
-              </span>
+              <span style="font-weight:700;color:var(--green)">+${avg} subs/den</span>
+            </div>`;
+          }).join('')
+        : '';
+
+      // Průměrné views reelů podle stejných cyklů (16.–16.), počítáno jen z reelů TOHOTO profilu
+      // (na rozdíl od OF subs se tu nic nesdílí mezi oběma IG účty jedné holky).
+      const viewsCycles = {};
+      (reels || []).forEach(r => {
+        if (!r.posted_at) return;
+        const key = ofCycleKey(r.posted_at);
+        if (!viewsCycles[key]) viewsCycles[key] = { key, label: ofCycleLabel(r.posted_at), start: ofCycleStart(r.posted_at), reels: [] };
+        viewsCycles[key].reels.push(r);
+      });
+      const viewsCycleList = Object.values(viewsCycles).sort((a, b) => b.start - a.start);
+      const viewsCycleHistoryHtml = viewsCycleList.length
+        ? viewsCycleList.slice(0, 8).map(c => {
+            const avgViews = Math.round(c.reels.reduce((s, r) => s + (r.views || 0), 0) / c.reels.length);
+            const isCurrent = c.key === currentCycleKey;
+            return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px">
+              <span style="color:${isCurrent ? 'var(--text)' : 'var(--muted)'};font-weight:${isCurrent ? 700 : 400}">${c.label}${isCurrent ? ' (aktuální)' : ''} <span style="color:var(--muted);font-weight:400">(${c.reels.length} reelů)</span></span>
+              <span style="font-weight:700;color:var(--green)">Ø ${fmt(avgViews)} views</span>
             </div>`;
           }).join('')
         : '';
@@ -1188,9 +1198,9 @@ function renderDetail(handle) {
         </div>
         <div class="card" style="position:relative">
           <div class="card-icon" style="background:rgba(252,176,69,0.12)">💎</div>
-          ${latestCycle ? `<div style="position:absolute;top:20px;right:20px;text-align:right">
-            <div style="font-size:10px;color:var(--muted);margin-bottom:2px">${latestCycle.label}${latestCycle.key === currentCycleKey ? ' (aktuální)' : ''}</div>
-            <div style="font-size:18px;font-weight:800;color:var(--green)">+${latestAvg}/den</div>
+          ${avgPerDay ? `<div style="position:absolute;top:20px;right:20px;text-align:right">
+            <div style="font-size:10px;color:var(--muted);margin-bottom:2px">${currentCycle.label} (aktuální)</div>
+            <div style="font-size:18px;font-weight:800;color:var(--green)">+${avgPerDay}/den</div>
           </div>` : ''}
           <div class="card-label">OnlyFans Subs</div>
           <div class="card-value">${fmt(totalSubs)}</div>
@@ -1215,6 +1225,11 @@ function renderDetail(handle) {
       <div class="chart-card" style="margin-bottom:24px">
         <div class="chart-title">📆 OF Subs – po cyklech (16. – 16.)</div>
         ${cycleHistoryHtml}
+      </div>` : ''}
+      ${viewsCycleList.length ? `
+      <div class="chart-card" style="margin-bottom:24px">
+        <div class="chart-title">📆 Průměrné views podle cyklů (16. – 16.)</div>
+        ${viewsCycleHistoryHtml}
       </div>` : ''}`;
     })()}
 
